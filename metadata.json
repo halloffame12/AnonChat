@@ -1,0 +1,5 @@
+{
+  "name": "AnonChat Live",
+  "description": "A production-ready anonymous real-time chat application with group, private, and random matching capabilities.",
+  "requestFramePermissions": []
+}
