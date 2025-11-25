@@ -38,10 +38,11 @@ class SocketService {
     const eventsToForward = [
       'presence:update',
       'lobby:update',
+      'rooms:update', // <--- ADDED THIS: Critical for receiving public rooms list
       'group:message',
       'private:request',
       'private:request:response',
-      'private:start', // New: Chat started
+      'private:start', 
       'private:message',
       'random:matched',
       'message:receive',
