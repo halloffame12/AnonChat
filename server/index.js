@@ -260,8 +260,9 @@ io.on('connection', (socket) => {
           type: 'text'
         };
 
-        io.to(chatId).emit('message:receive', message);
+        // SECURITY: Send ack first, then broadcast to others only (not sender)
         socket.emit('message:ack', { tempId: data.tempId, messageId: message.id });
+        socket.to(chatId).emit('message:receive', message);
       } catch (error) {
         console.error('[MESSAGE ERROR]', error);
         socket.emit('error', { message: 'Failed to send message' });
