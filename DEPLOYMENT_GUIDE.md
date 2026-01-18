@@ -3,6 +3,7 @@
 ## ✅ Pre-Deployment Checklist
 
 ### Backend (Render)
+
 - [ ] Create `.env` file in `server/` with production values:
   ```env
   PORT=3001
@@ -16,6 +17,7 @@
 - [ ] Test `/health` endpoint after deployment
 
 ### Frontend (Netlify)
+
 - [ ] Create `.env.production` with:
   ```env
   VITE_API_URL=https://anonchat-backend-6oc4.onrender.com
@@ -35,6 +37,7 @@
 ## 🔒 Security Fixes Implemented
 
 ### Backend Security
+
 1. **CORS Whitelist** ✅
    - Replaced wildcard `origin: "*"` with environment-based whitelist
    - Set `ALLOWED_ORIGINS=https://anonchatweb.netlify.app` in production
@@ -73,6 +76,7 @@
 ## 🐛 Bug Fixes Implemented
 
 ### Backend Logic Fixes
+
 1. **Race Condition in Random Matching** ✅
    - Changed `waitingQueue` from Array to Map<userId, timestamp>
    - Prevents duplicate matches and ghost users
@@ -94,6 +98,7 @@
    - Logs all socket errors for debugging
 
 ### Frontend Fixes
+
 1. **Double Socket Connection Bug** ✅
    - Removed duplicate `connect()` call from App.tsx
    - Socket now only connected in AuthContext
@@ -119,6 +124,7 @@
    - Prevents duplicate messages in UI
 
 ### Frontend UX Improvements
+
 1. **Accessibility (WCAG 2.1 AA)** ✅
    - Added `aria-label` to all icon-only buttons:
      - Back button: "Go back to chat list"
@@ -144,6 +150,7 @@
 ### Step 1: Update Environment Variables
 
 #### Render (Backend)
+
 1. Go to Render dashboard → anonchat-backend
 2. Environment → Add:
    ```
@@ -152,6 +159,7 @@
 3. Save → Auto-redeploy
 
 #### Netlify (Frontend)
+
 1. Go to Netlify dashboard → anonchatweb
 2. Site settings → Environment variables → Add:
    ```
@@ -160,6 +168,7 @@
 3. Save → Trigger deploy
 
 ### Step 2: Push Code to GitHub
+
 ```bash
 git add .
 git commit -m "🔒 Production audit fixes: security, bug fixes, accessibility"
@@ -167,11 +176,15 @@ git push origin main
 ```
 
 ### Step 3: Verify Deployments
+
 1. **Backend Health Check**:
+
    ```bash
    curl https://anonchat-backend-6oc4.onrender.com/health
    ```
+
    Should return:
+
    ```json
    {
      "status": "ok",
@@ -189,6 +202,7 @@ git push origin main
    - Test login, messaging, random match
 
 ### Step 4: Monitor Production
+
 - Render logs: https://dashboard.render.com/
 - Netlify logs: https://app.netlify.com/
 - Watch for:
@@ -228,15 +242,18 @@ git push origin main
 ## ⚡ Performance Optimizations
 
 ### Render Cold Starts (Current Issue)
+
 **Problem**: Render free tier spins down after 15 min of inactivity. First request after takes 30-60s.
 
 **Solutions**:
+
 1. **UptimeRobot** (Free):
    - Ping `/health` endpoint every 5 minutes
    - Keeps server warm
    - Setup: https://uptimerobot.com
 
 2. **Render Keep-Alive Service** (Free):
+
    ```bash
    # Add to Render cron job (if available)
    */5 * * * * curl https://anonchat-backend-6oc4.onrender.com/health
@@ -248,6 +265,7 @@ git push origin main
    - Better performance
 
 ### Frontend Performance
+
 1. **Code Splitting** (Future):
    - Lazy load emoji picker
    - Lazy load chat components
@@ -261,6 +279,7 @@ git push origin main
 ## 🧪 Testing Checklist
 
 ### Manual Testing
+
 - [ ] User can register with username/age/gender/location
 - [ ] Socket connects successfully
 - [ ] Public room list loads
@@ -280,12 +299,14 @@ git push origin main
 - [ ] CORS blocks unauthorized origins
 
 ### Accessibility Testing
+
 - [ ] Screen reader can read all buttons
 - [ ] Keyboard navigation works (Tab, Enter, Esc)
 - [ ] Focus indicators visible
 - [ ] ARIA labels accurate
 
 ### Browser Testing
+
 - [ ] Chrome/Edge (Chromium)
 - [ ] Firefox
 - [ ] Safari (iOS/macOS)
@@ -297,6 +318,7 @@ git push origin main
 ## 📊 Metrics to Monitor
 
 ### Server Metrics
+
 - Active connections: `activeSockets.size`
 - Registered users: `users.size`
 - Active rooms: `publicRooms.size + privateChatRooms.size`
@@ -305,11 +327,13 @@ git push origin main
 - Uptime: `process.uptime()`
 
 ### Health Endpoint
+
 ```bash
 curl https://anonchat-backend-6oc4.onrender.com/health
 ```
 
 ### Logs to Watch
+
 - `[CONNECT]` / `[DISCONNECT]` - Connection lifecycle
 - `[RANDOM MATCH]` - Successful matches
 - `[MESSAGE ERROR]` - Failed message sends
@@ -321,29 +345,37 @@ curl https://anonchat-backend-6oc4.onrender.com/health
 ## 🚨 Troubleshooting
 
 ### Issue: CORS Error in Browser Console
+
 **Symptom**: `Access-Control-Allow-Origin` error
 **Fix**:
+
 1. Check Render env var: `ALLOWED_ORIGINS=https://anonchatweb.netlify.app`
 2. Verify no trailing slash in URL
 3. Restart Render service
 
 ### Issue: Socket Connection Fails
+
 **Symptom**: `[Socket] Connection error` in console
 **Fix**:
+
 1. Check backend is running: `curl <backend-url>/health`
 2. Verify `VITE_API_URL` in Netlify env vars
 3. Check Render logs for errors
 
 ### Issue: Messages Not Sending
+
 **Symptom**: Messages stuck in "Sending..." state
 **Fix**:
+
 1. Check rate limits (500ms between messages)
 2. Verify socket is connected: check console logs
 3. Check backend logs for errors
 
 ### Issue: Random Match Not Working
+
 **Symptom**: Searching indefinitely, no match
 **Fix**:
+
 1. Need 2 users searching simultaneously
 2. Check server logs for `[RANDOM QUEUE]` entries
 3. Verify `waitingQueue` cleanup job running
@@ -353,6 +385,7 @@ curl https://anonchat-backend-6oc4.onrender.com/health
 ## 🎯 Success Criteria
 
 ✅ **Production Ready** when:
+
 1. Health endpoint returns 200 OK
 2. CORS only allows your frontend domain
 3. All XSS attack vectors sanitized
@@ -369,6 +402,7 @@ curl https://anonchat-backend-6oc4.onrender.com/health
 ## 📞 Support
 
 ### Issues & Bug Reports
+
 - GitHub Issues: https://github.com/halloffame12/AnonChat/issues
 - Include:
   - Steps to reproduce
@@ -377,6 +411,7 @@ curl https://anonchat-backend-6oc4.onrender.com/health
   - Expected vs actual behavior
 
 ### Resources
+
 - Socket.IO Docs: https://socket.io/docs/v4/
 - React Docs: https://react.dev/
 - Render Docs: https://render.com/docs
