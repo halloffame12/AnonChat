@@ -32,9 +32,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
     audioRef.current = new Audio(POP_SOUND);
   }, []);
 
+  // Use ref to track if initial message was added
+  const initializedRef = useRef(false);
+
   useEffect(() => {
-    // Load initial mock system message
-    if (messages.length === 0) {
+    // Load initial mock system message (only once)
+    if (!initializedRef.current) {
+        initializedRef.current = true;
         setMessages([{
             id: 'init',
             chatId: session.id,
@@ -304,8 +308,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="p-4 md:p-6 bg-white border-t border-slate-100 z-20 relative">
+      {/* Input Area - Fixed for mobile keyboard */}
+      <div className="p-4 md:p-6 bg-white border-t border-slate-100 z-20 relative safe-area-bottom">
         {showEmoji && (
             <div className="absolute bottom-[88px] left-4 z-50 shadow-2xl rounded-2xl animate-fade-in-up">
                 <EmojiPicker onEmojiClick={onEmojiClick} height={400} width={320} />
@@ -322,19 +326,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
             <Smile className="w-6 h-6" />
           </button>
           <textarea
-            className="flex-1 bg-transparent border-none resize-none focus:ring-0 text-base text-slate-800 max-h-32 min-h-[44px] py-2.5 px-2 placeholder:text-slate-400"
+            className="flex-1 bg-transparent border-none resize-none focus:ring-0 text-base text-slate-800 max-h-32 min-h-[44px] py-3 px-2 placeholder:text-slate-400 touch-manipulation"
             placeholder="Type a message..."
             rows={1}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
             aria-label="Message input"
+            style={{ fontSize: '16px' }}
           />
           <button 
             onClick={handleSend}
             disabled={!inputText.trim()}
             aria-label="Send message"
-            className="p-2.5 bg-primary text-white rounded-full hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/30"
+            className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center bg-primary text-white rounded-full hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/30 touch-manipulation"
           >
             <Send className="w-5 h-5 ml-0.5" />
           </button>

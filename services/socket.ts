@@ -89,13 +89,37 @@ class SocketService {
     if (!this.listeners[event]) {
       this.listeners[event] = [];
     }
+    // Prevent duplicate listener registration
+    if (this.listeners[event].includes(callback)) {
+      console.warn(`[Socket] Duplicate listener prevented for event: ${event}`);
+      return;
+    }
     this.listeners[event].push(callback);
+    if (this.listeners[event].length > 2) {
+      console.warn(`[Socket] Multiple listeners (${this.listeners[event].length}) registered for: ${event}`);
+    }
   }
 
   // Remove a listener
   off(event: string, callback: Listener) {
     if (!this.listeners[event]) return;
     this.listeners[event] = this.listeners[event].filter(l => l !== callback);
+    // Clean up empty arrays to prevent memory leaks
+    if (this.listeners[event].length === 0) {
+      delete this.listeners[event];
+    }
+  }
+
+  // Remove ALL listeners for an event (useful for cleanup)
+  removeAllListenersForEvent(event: string) {
+    if (this.listeners[event]) {
+      delete this.listeners[event];
+    }
+  }
+
+  // Get listener count for debugging
+  getListenerCount(event: string): number {
+    return this.listeners[event]?.length || 0;
   }
 
   // Emit event from React components to the Server

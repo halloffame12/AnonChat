@@ -95,7 +95,7 @@ const AppContent: React.FC = () => {
             
             // If it's a message for a room we just joined but don't have a session for yet
             if (!exists && msg.type === 'system' && msg.content.includes('joined')) {
-                 // Fetch room info (simplified for this demo: finding from publicRooms)
+                 // Fetch room info from current state (using functional update)
                  const room = publicRooms.find(r => r.id === msg.chatId);
                  if(room) {
                      return [{
@@ -141,7 +141,7 @@ const AppContent: React.FC = () => {
       socketService.off('typing', handleTyping);
       socketService.off('message:receive', handleReceiveMessage);
     };
-  }, [isAuthenticated, activeSessionId, user, publicRooms]);
+  }, [isAuthenticated, activeSessionId, user]);
 
   const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
       setNotification({ message: msg, type });
@@ -214,7 +214,7 @@ const AppContent: React.FC = () => {
 
   // RENDER MAIN APP
   return (
-    <div className="flex h-screen h-[100dvh] bg-slate-100 overflow-hidden relative font-sans">
+    <div className="flex h-[100dvh] bg-slate-100 overflow-hidden relative font-sans supports-[height:100dvh]:h-[100dvh]">
       {/* Sidebar */}
       <div className={`${activeSessionId ? 'hidden md:flex' : 'flex w-full'} md:w-80 lg:w-96 h-full flex-shrink-0 transition-all duration-300 ease-in-out z-20`}>
         <Sidebar 

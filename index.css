@@ -15,3 +15,27 @@
 body {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Mobile safe area support for notch devices */
+.safe-area-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* Prevent viewport zoom on input focus (iOS) */
+input, textarea, select {
+  font-size: 16px !important;
+}
+
+/* Fix mobile keyboard pushing content */
+@supports (-webkit-touch-callout: none) {
+  body {
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Ensure chat input stays visible above mobile keyboard */
+@media (max-width: 768px) {
+  textarea {
+    max-height: 120px !important;
+  }
+}
