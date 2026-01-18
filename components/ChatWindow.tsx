@@ -70,11 +70,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
         scrollToBottom();
       }
     };
+
+    // MESSAGE ACKNOWLEDGMENT
+    const handleAck = (data: { tempId: string, messageId: string }) => {
+      setMessages(prev => prev.map(m => 
+        m.id === data.tempId ? { ...m, id: data.messageId } : m
+      ));
+    };
     
     socketService.on('message:receive', handleReceive);
+    socketService.on('message:ack', handleAck);
 
     return () => {
       socketService.off('message:receive', handleReceive);
+      socketService.off('message:ack', handleAck);
     };
   }, [session.id, currentUser.id, blockedUsers]);
 
@@ -91,8 +100,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
   const handleSend = () => {
     if (!inputText.trim()) return;
 
+    const tempId = 'temp-' + Date.now();
     const newMessage: Message = {
-      id: 'temp-' + Date.now(),
+      id: tempId,
       chatId: session.id,
       senderId: currentUser.id,
       senderAvatar: currentUser.avatar,
@@ -110,7 +120,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
     socketService.send('message:send', {
       chatId: session.id,
       content: newMessage.content,
-      senderId: currentUser.id
+      senderId: currentUser.id,
+      tempId
     });
   };
 
@@ -164,6 +175,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
           {onBack && (
             <button 
                 onClick={onBack} 
+                aria-label="Go back to chat list"
                 className="md:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
             >
               <ChevronLeft className="w-6 h-6" />
@@ -198,6 +210,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
         <div className="relative">
           <button 
             onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Open chat options menu"
+            aria-expanded={menuOpen ? "true" : "false"}
             className="p-2.5 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"
           >
             <MoreVertical className="w-5 h-5" />
@@ -301,6 +315,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
         <div className="flex items-end gap-3 bg-slate-50 p-2 rounded-3xl border border-slate-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all shadow-sm">
           <button 
               onClick={() => setShowEmoji(!showEmoji)}
+              aria-label="Toggle emoji picker"
+              aria-pressed={showEmoji ? "true" : "false"}
               className={`p-2.5 rounded-full transition-colors ${showEmoji ? 'text-primary bg-indigo-50' : 'text-slate-400 hover:text-primary hover:bg-white'}`}
           >
             <Smile className="w-6 h-6" />
@@ -312,11 +328,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
-            style={{ height: 'auto' }}
+            aria-label="Message input"
           />
           <button 
             onClick={handleSend}
             disabled={!inputText.trim()}
+            aria-label="Send message"
             className="p-2.5 bg-primary text-white rounded-full hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/30"
           >
             <Send className="w-5 h-5 ml-0.5" />

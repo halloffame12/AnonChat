@@ -70,18 +70,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </span>
         </div>
         
-        <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold leading-tight mb-8 tracking-tight animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+        <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold leading-tight mb-8 tracking-tight animate-fade-in-up [animation-delay:0.1s]">
           Talk to Strangers,<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
             Make Real Connections.
           </span>
         </h1>
         
-        <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+        <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed animate-fade-in-up [animation-delay:0.2s]">
           Experience the next generation of anonymous chat. Secure, fast, and beautifully designed for meaningful conversations without boundaries.
         </p>
         
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{animationDelay: '0.3s'}}>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up [animation-delay:0.3s]">
           <button 
             onClick={onGetStarted}
             className="w-full sm:w-auto px-8 py-4 bg-white text-slate-950 rounded-full font-bold text-lg shadow-xl shadow-indigo-500/10 hover:scale-105 hover:shadow-indigo-500/20 transition-all duration-200 flex items-center justify-center gap-2 group"

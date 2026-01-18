@@ -91,6 +91,7 @@ export const LoginModal: React.FC = () => {
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Gender</label>
               <div className="relative">
                 <select
+                    aria-label="Select your gender"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-base font-medium appearance-none cursor-pointer"
                     value={formData.gender}
                     onChange={(e) => setFormData({...formData, gender: e.target.value as Gender})}

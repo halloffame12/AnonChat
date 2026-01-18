@@ -21,22 +21,15 @@ const AppContent: React.FC = () => {
   const [publicRooms, setPublicRooms] = useState<Room[]>([]);
   const [incomingRequest, setIncomingRequest] = useState<{ requesterId: string, requesterName: string, requesterAvatar?: string } | null>(null);
 
-  // Initialize Socket connection upon login
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      socketService.connect(user.id);
-    } else {
-      socketService.disconnect();
-    }
-  }, [isAuthenticated, user]);
+  // FIX: Socket initialization already handled in AuthContext - removed duplicate
 
   // Handle Socket Events
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
 
     // 1. Update Online Users
     const handleLobbyUpdate = (data: { activeUsers: number, users: User[] }) => {
-        setOnlineUsers(data.users.filter(u => u.id !== user?.id));
+        setOnlineUsers(data.users.filter(u => u.id !== user.id));
     };
     
     // 2. Room List Updates
@@ -304,7 +297,10 @@ const AppContent: React.FC = () => {
             <h3 className="text-xl font-bold text-slate-800 mb-2">Finding a match...</h3>
             <p className="text-slate-500 mb-8 text-sm">Connecting you with someone random.</p>
             <button 
-              onClick={() => setIsSearching(false)}
+              onClick={() => {
+                setIsSearching(false);
+                socketService.send('random:cancel', {});
+              }}
               className="w-full py-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-sm transition-colors"
             >
               Cancel Search

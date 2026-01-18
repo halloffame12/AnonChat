@@ -1,9 +1,12 @@
 import { io, Socket } from 'socket.io-client';
 import { Message, ChatSession, ChatType } from '../types';
 
-// The URL of your Node.js backend
-// Defaults to localhost if env var not set
-const SOCKET_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:3001';
+// ENVIRONMENT VALIDATION
+const SOCKET_URL = (import.meta as any).env.VITE_API_URL;
+if (!SOCKET_URL && (import.meta as any).env.PROD) {
+  throw new Error('VITE_API_URL environment variable is required in production');
+}
+const FALLBACK_URL = 'http://localhost:3001';
 
 type Listener = (...args: any[]) => void;
 
@@ -13,32 +16,46 @@ class SocketService {
 
   connect(token: string) {
     if (this.socket) {
-      this.socket.disconnect();
+      console.log('[Socket] Cleaning up existing connection');
+      this.disconnect();
     }
 
-    console.log(`Connecting to socket server at ${SOCKET_URL}...`);
+    const url = SOCKET_URL || FALLBACK_URL;
+    console.log(`[Socket] Connecting to ${url}...`);
     
-    this.socket = io(SOCKET_URL, {
+    this.socket = io(url, {
       auth: { token },
-      transports: ['websocket', 'polling'], // Try websocket first
+      transports: ['websocket', 'polling'],
       reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
     });
 
     this.socket.on('connect', () => {
-      console.log('Connected to socket server:', this.socket?.id);
+      console.log('[Socket] Connected:', this.socket?.id);
       this.emitInternal('connect');
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('Disconnected from socket server');
-      this.emitInternal('disconnect');
+    this.socket.on('connect_error', (error) => {
+      console.error('[Socket] Connection error:', error.message);
+      this.emitInternal('connect_error', error);
+    });
+
+    this.socket.on('error', (error) => {
+      console.error('[Socket] Socket error:', error);
+      this.emitInternal('error', error);
+    });
+
+    this.socket.on('disconnect', (reason) => {
+      console.log('[Socket] Disconnected:', reason);
+      this.emitInternal('disconnect', reason);
     });
 
     // Map incoming socket events to internal listeners
     const eventsToForward = [
       'presence:update',
       'lobby:update',
-      'rooms:update', // <--- ADDED THIS: Critical for receiving public rooms list
+      'rooms:update',
       'group:message',
       'private:request',
       'private:request:response',
@@ -46,6 +63,7 @@ class SocketService {
       'private:message',
       'random:matched',
       'message:receive',
+      'message:ack',
       'typing'
     ];
 
@@ -59,6 +77,8 @@ class SocketService {
 
   disconnect() {
     if (this.socket) {
+      console.log('[Socket] Disconnecting and cleaning up listeners');
+      this.socket.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;
     }
