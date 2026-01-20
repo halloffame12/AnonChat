@@ -19,6 +19,10 @@ const server = http.createServer(app);
 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001').split(',').map(s => s.trim());
 
+// Validation constants
+const MIN_AGE = 13;
+const VALID_GENDERS = ['male', 'female', 'other'];
+
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
@@ -644,18 +648,17 @@ app.post('/api/login', (req, res) => {
   }
 
   // Validate age
-  if (typeof age !== 'number' || age < 13) {
-    return res.status(400).json({ error: 'You must be at least 13 years old' });
+  if (typeof age !== 'number' || age < MIN_AGE) {
+    return res.status(400).json({ error: `You must be at least ${MIN_AGE} years old` });
   }
 
   // Validate gender
-  if (!['male', 'female', 'other'].includes(gender.toLowerCase())) {
+  if (!VALID_GENDERS.includes(gender.toLowerCase())) {
     return res.status(400).json({ error: 'Invalid gender' });
   }
 
   // Create user
   const userId = `user-${uuidv4()}`;
-  const sessionToken = crypto.randomBytes(32).toString('hex');
 
   const user = {
     id: userId,
@@ -672,19 +675,12 @@ app.post('/api/login', (req, res) => {
   // Initialize reputation
   reputationSystem.initializeReputation(userId);
 
-  // Create session (without socket for now)
-  sessionManager.sessions.set(sessionToken, {
-    token: sessionToken,
-    socketId: null,
-    userId,
-    username,
-    createdAt: Date.now(),
-    lastActivity: Date.now(),
-    currentRoom: null,
-    currentMatch: null,
-    messageBuffer: [],
-    reconnectCount: 0
-  });
+  // Create session using SessionManager (without socket initially)
+  const sessionToken = sessionManager.createSession(null, userId, username);
+  const session = sessionManager.getSession(sessionToken);
+  if (session) {
+    session.socketId = null; // Clear socket since this is API login
+  }
 
   console.log(`[API_LOGIN] ${username} (${userId}) - Token: ${sessionToken}`);
 
