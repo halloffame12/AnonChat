@@ -629,6 +629,72 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Login endpoint for REST API authentication
+app.post('/api/login', (req, res) => {
+  if (!validatePayload(req.body, { username: 'string', age: 'number', gender: 'string' })) {
+    return res.status(400).json({ error: 'Invalid payload. username, age, and gender are required.' });
+  }
+
+  const { username: rawUsername, age, gender, location } = req.body;
+  
+  // Sanitize and validate username
+  const username = sanitize(rawUsername).substring(0, 30);
+  if (!username) {
+    return res.status(400).json({ error: 'Username required' });
+  }
+
+  // Validate age
+  if (typeof age !== 'number' || age < 13) {
+    return res.status(400).json({ error: 'You must be at least 13 years old' });
+  }
+
+  // Validate gender
+  if (!['male', 'female', 'other'].includes(gender.toLowerCase())) {
+    return res.status(400).json({ error: 'Invalid gender' });
+  }
+
+  // Create user
+  const userId = `user-${uuidv4()}`;
+  const sessionToken = crypto.randomBytes(32).toString('hex');
+
+  const user = {
+    id: userId,
+    username,
+    age,
+    gender: gender.toLowerCase(),
+    location: location ? sanitize(location).substring(0, 100) : undefined,
+    joinedAt: Date.now(),
+    status: 'online'
+  };
+
+  users.set(userId, user);
+
+  // Initialize reputation
+  reputationSystem.initializeReputation(userId);
+
+  // Create session (without socket for now)
+  sessionManager.sessions.set(sessionToken, {
+    token: sessionToken,
+    socketId: null,
+    userId,
+    username,
+    createdAt: Date.now(),
+    lastActivity: Date.now(),
+    currentRoom: null,
+    currentMatch: null,
+    messageBuffer: [],
+    reconnectCount: 0
+  });
+
+  console.log(`[API_LOGIN] ${username} (${userId}) - Token: ${sessionToken}`);
+
+  res.json({
+    success: true,
+    user,
+    token: sessionToken
+  });
+});
+
 // Admin dashboard endpoint (protected by environment variable)
 app.get('/admin/metrics', (req, res) => {
   const adminKey = req.headers['x-admin-key'];
@@ -663,6 +729,44 @@ io.on('connection', (socket) => {
 
   let currentUserId = null;
   let currentSessionToken = null;
+
+  // Check for authentication token from socket.io client
+  const authToken = socket.handshake.auth?.token;
+  if (authToken) {
+    // Try to connect to existing session from API login
+    const session = sessionManager.getSession(authToken);
+    if (session) {
+      const userId = session.userId;
+      const user = users.get(userId);
+
+      if (user) {
+        // Connect socket to existing session
+        currentUserId = userId;
+        currentSessionToken = authToken;
+        
+        // Update session with socket
+        session.socketId = socket.id;
+        session.lastActivity = Date.now();
+        sessionManager.socketToSession.set(socket.id, authToken);
+
+        // Update user socket info
+        user.socketId = socket.id;
+        user.status = 'online';
+
+        activeSockets.set(socket.id, userId);
+        
+        if (!userSockets.has(userId)) {
+          userSockets.set(userId, new Set());
+        }
+        userSockets.get(userId).add(socket.id);
+
+        // Broadcast updated user list
+        broadcastOnlineUsers();
+
+        console.log(`[TOKEN_AUTH] User ${userId} connected via token`);
+      }
+    }
+  }
 
   // ============================================
   // 1. USER JOIN (NEW SESSION)
