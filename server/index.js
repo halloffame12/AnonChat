@@ -21,6 +21,18 @@ const server = http.createServer(app);
 const DEFAULT_ORIGINS = 'http://localhost:3000,http://localhost:3001,http://localhost:5173';
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || DEFAULT_ORIGINS).split(',').map(s => s.trim()).filter(Boolean);
 
+// Production security warning
+const isProduction = process.env.NODE_ENV === 'production';
+if (isProduction && !process.env.ALLOWED_ORIGINS) {
+  console.warn('[SECURITY WARNING] ALLOWED_ORIGINS not set in production! Using default localhost origins.');
+  console.warn('[SECURITY WARNING] Set ALLOWED_ORIGINS environment variable to your production frontend URL.');
+}
+
+// Warn if localhost origins are used in production
+if (isProduction && ALLOWED_ORIGINS.some(origin => origin.includes('localhost'))) {
+  console.warn('[SECURITY WARNING] Localhost origins detected in production CORS configuration.');
+}
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -521,6 +533,7 @@ const adminMetrics = new AdminMetrics();
 // ===================================================================================
 
 const users = new Map(); // userId -> userData
+const tokenToUser = new Map(); // authToken -> userId (for O(1) token lookups)
 const activeSockets = new Map(); // socketId -> userId
 const userSockets = new Map(); // userId -> Set<socketId>
 const publicRooms = new Map(); // roomId -> roomData
@@ -672,7 +685,7 @@ app.post('/api/login', (req, res) => {
     // Generate avatar URL
     const avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${userId}`;
     
-    // Create user object
+    // Create user object (isOnline will be set to true when socket connects)
     const user = {
       id: userId,
       username: sanitizedUsername,
@@ -680,13 +693,14 @@ app.post('/api/login', (req, res) => {
       gender: sanitizedGender,
       location: sanitizedLocation,
       avatar: avatar,
-      isOnline: false, // Will be set to true when socket connects
-      authToken: authToken, // Store for socket authentication
+      isOnline: false,
+      authToken: authToken,
       createdAt: Date.now()
     };
     
-    // Store user temporarily (will be fully activated on socket connect)
+    // Store user in both maps for O(1) lookups
     users.set(userId, user);
+    tokenToUser.set(authToken, userId);
     
     // Initialize reputation
     reputationSystem.initializeReputation(userId);
@@ -694,6 +708,7 @@ app.post('/api/login', (req, res) => {
     console.log(`[API_LOGIN] User created: ${sanitizedUsername} (${userId})`);
     
     // Return user data and token
+    // Note: isOnline is true in response because socket will connect immediately after
     res.json({
       success: true,
       user: {
@@ -749,18 +764,17 @@ io.use((socket, next) => {
     return next(new Error('Authentication token required'));
   }
   
-  // Find user with this token
-  let authenticatedUser = null;
-  for (const [userId, userData] of users.entries()) {
-    if (userData.authToken === token) {
-      authenticatedUser = userData;
-      break;
-    }
-  }
-  
-  if (!authenticatedUser) {
+  // O(1) token lookup using tokenToUser map
+  const userId = tokenToUser.get(token);
+  if (!userId) {
     console.log(`[SOCKET_AUTH] Invalid token for socket ${socket.id}`);
     return next(new Error('Invalid authentication token'));
+  }
+  
+  const authenticatedUser = users.get(userId);
+  if (!authenticatedUser) {
+    console.log(`[SOCKET_AUTH] User not found for token, socket ${socket.id}`);
+    return next(new Error('User not found'));
   }
   
   // Attach user data to socket for later use
