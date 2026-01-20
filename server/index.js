@@ -17,12 +17,28 @@ const server = http.createServer(app);
 // CONFIGURATION & SECURITY
 // ===================================================================================
 
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001').split(',').map(s => s.trim());
+// Default allowed origins include common development ports
+const DEFAULT_ORIGINS = 'http://localhost:3000,http://localhost:3001,http://localhost:5173';
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || DEFAULT_ORIGINS).split(',').map(s => s.trim()).filter(Boolean);
+
+// Production security warning
+const isProduction = process.env.NODE_ENV === 'production';
+if (isProduction && !process.env.ALLOWED_ORIGINS) {
+  console.warn('[SECURITY WARNING] ALLOWED_ORIGINS not set in production! Using default localhost origins.');
+  console.warn('[SECURITY WARNING] Set ALLOWED_ORIGINS environment variable to your production frontend URL.');
+}
+
+// Warn if localhost origins are used in production
+if (isProduction && ALLOWED_ORIGINS.some(origin => origin.includes('localhost'))) {
+  console.warn('[SECURITY WARNING] Localhost origins detected in production CORS configuration.');
+}
 
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    console.warn(`[CORS] Blocked origin: ${origin}`);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true
@@ -34,6 +50,7 @@ const io = new Server(server, {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+      console.warn(`[Socket.IO CORS] Blocked origin: ${origin}`);
       callback(new Error('Not allowed by Socket.IO CORS'));
     },
     credentials: true
@@ -516,6 +533,7 @@ const adminMetrics = new AdminMetrics();
 // ===================================================================================
 
 const users = new Map(); // userId -> userData
+const tokenToUser = new Map(); // authToken -> userId (for O(1) token lookups)
 const activeSockets = new Map(); // socketId -> userId
 const userSockets = new Map(); // userId -> Set<socketId>
 const publicRooms = new Map(); // roomId -> roomData
@@ -605,13 +623,18 @@ const getRoomsList = () => {
 
 const broadcastOnlineUsers = () => {
   const onlineUsers = getOnlineUsers();
-  io.emit('onlineUsersUpdate', onlineUsers);
+  // Emit with frontend-expected event name
+  io.emit('lobby:update', {
+    activeUsers: onlineUsers.length,
+    users: onlineUsers
+  });
   adminMetrics.updateConcurrentUsers(onlineUsers.length);
 };
 
 const broadcastRoomsList = () => {
   const roomsList = getRoomsList();
-  io.emit('roomsListUpdate', roomsList);
+  // Emit with frontend-expected event name
+  io.emit('rooms:update', roomsList);
 };
 
 // ===================================================================================
@@ -627,6 +650,82 @@ app.get('/health', (req, res) => {
     rooms: publicRooms.size + privateChatRooms.size,
     timestamp: Date.now()
   });
+});
+
+// ===================================================================================
+// LOGIN ENDPOINT - Creates user and returns auth token
+// ===================================================================================
+
+app.post('/api/login', (req, res) => {
+  try {
+    const { username, age, gender, location } = req.body;
+    
+    // Validate required fields
+    if (!username || typeof username !== 'string') {
+      return res.status(400).json({ error: 'Username is required' });
+    }
+    
+    if (!age || typeof age !== 'number' || age < 13) {
+      return res.status(400).json({ error: 'Valid age (13+) is required' });
+    }
+    
+    // Sanitize inputs
+    const sanitizedUsername = sanitize(username).substring(0, 30);
+    const sanitizedLocation = location ? sanitize(String(location)).substring(0, 100) : undefined;
+    const sanitizedGender = ['Male', 'Female', 'Other'].includes(gender) ? gender : 'Other';
+    
+    if (!sanitizedUsername) {
+      return res.status(400).json({ error: 'Invalid username after sanitization' });
+    }
+    
+    // Generate user ID and auth token
+    const userId = `user-${uuidv4()}`;
+    const authToken = crypto.randomBytes(32).toString('hex');
+    
+    // Generate avatar URL
+    const avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${userId}`;
+    
+    // Create user object (isOnline will be set to true when socket connects)
+    const user = {
+      id: userId,
+      username: sanitizedUsername,
+      age: age,
+      gender: sanitizedGender,
+      location: sanitizedLocation,
+      avatar: avatar,
+      isOnline: false,
+      authToken: authToken,
+      createdAt: Date.now()
+    };
+    
+    // Store user in both maps for O(1) lookups
+    users.set(userId, user);
+    tokenToUser.set(authToken, userId);
+    
+    // Initialize reputation
+    reputationSystem.initializeReputation(userId);
+    
+    console.log(`[API_LOGIN] User created: ${sanitizedUsername} (${userId})`);
+    
+    // Return user data and token
+    // Note: isOnline is true in response because socket will connect immediately after
+    res.json({
+      success: true,
+      user: {
+        id: userId,
+        username: sanitizedUsername,
+        age: age,
+        gender: sanitizedGender,
+        location: sanitizedLocation,
+        avatar: avatar,
+        isOnline: true
+      },
+      token: authToken
+    });
+  } catch (error) {
+    console.error('[API_LOGIN] Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Admin dashboard endpoint (protected by environment variable)
@@ -654,15 +753,82 @@ app.get('/admin/metrics', (req, res) => {
 });
 
 // ===================================================================================
+// SOCKET.IO AUTHENTICATION MIDDLEWARE
+// ===================================================================================
+
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  
+  if (!token) {
+    console.log(`[SOCKET_AUTH] No token provided for socket ${socket.id}`);
+    return next(new Error('Authentication token required'));
+  }
+  
+  // O(1) token lookup using tokenToUser map
+  const userId = tokenToUser.get(token);
+  if (!userId) {
+    console.log(`[SOCKET_AUTH] Invalid token for socket ${socket.id}`);
+    return next(new Error('Invalid authentication token'));
+  }
+  
+  const authenticatedUser = users.get(userId);
+  if (!authenticatedUser) {
+    console.log(`[SOCKET_AUTH] User not found for token, socket ${socket.id}`);
+    return next(new Error('User not found'));
+  }
+  
+  // Attach user data to socket for later use
+  socket.userId = authenticatedUser.id;
+  socket.username = authenticatedUser.username;
+  socket.userData = authenticatedUser;
+  
+  console.log(`[SOCKET_AUTH] Authenticated ${authenticatedUser.username} (${authenticatedUser.id})`);
+  next();
+});
+
+// ===================================================================================
 // SOCKET.IO CONNECTION HANDLER
 // ===================================================================================
 
 io.on('connection', (socket) => {
-  console.log(`[CONNECTION] Socket ${socket.id} connected`);
+  console.log(`[CONNECTION] Socket ${socket.id} connected (User: ${socket.username})`);
   adminMetrics.recordConnection();
 
-  let currentUserId = null;
+  // Use authenticated user data from middleware
+  let currentUserId = socket.userId;
   let currentSessionToken = null;
+  
+  // Activate user if authenticated via middleware
+  if (currentUserId) {
+    const user = users.get(currentUserId);
+    if (user) {
+      user.socketId = socket.id;
+      user.status = 'online';
+      user.isOnline = true;
+      
+      activeSockets.set(socket.id, currentUserId);
+      
+      if (!userSockets.has(currentUserId)) {
+        userSockets.set(currentUserId, new Set());
+      }
+      userSockets.get(currentUserId).add(socket.id);
+      
+      // Create session token
+      currentSessionToken = sessionManager.createSession(socket.id, currentUserId, user.username);
+      
+      // Send initial data to newly connected user
+      socket.emit('lobby:update', {
+        activeUsers: getOnlineUsers().length,
+        users: getOnlineUsers()
+      });
+      socket.emit('rooms:update', getRoomsList());
+      
+      // Broadcast to all users that someone joined
+      broadcastOnlineUsers();
+      
+      console.log(`[USER_ACTIVATED] ${user.username} (${currentUserId}) - Session: ${currentSessionToken}`);
+    }
+  }
 
   // ============================================
   // 1. USER JOIN (NEW SESSION)
@@ -1089,6 +1255,401 @@ io.on('connection', (socket) => {
   });
 
   // ============================================
+  // FRONTEND COMPATIBLE EVENT HANDLERS
+  // These handlers match the event names used by the frontend
+  // ============================================
+
+  // random:search - Frontend equivalent of startRandomChat
+  socket.on('random:search', (data) => {
+    if (!currentUserId) {
+      socket.emit('error', { message: 'Not authenticated' });
+      return;
+    }
+
+    // Add to matchmaking queue
+    const queueResult = matchmaking.addToQueue(currentUserId);
+    
+    if (!queueResult.success) {
+      socket.emit('error', { 
+        message: queueResult.reason === 'reputation_too_low' 
+          ? 'Your reputation is too low to match. Please improve your behavior.'
+          : 'Unable to join queue'
+      });
+      return;
+    }
+
+    // Try to find a match immediately
+    const match = matchmaking.findMatch(currentUserId);
+    
+    if (match) {
+      const { matchId, partnerId } = match;
+      const partner = users.get(partnerId);
+      const user = users.get(currentUserId);
+      
+      if (!partner) {
+        socket.emit('error', { message: 'Partner no longer available' });
+        return;
+      }
+
+      // Create private chat room
+      privateChatRooms.set(matchId, {
+        id: matchId,
+        participants: new Set([currentUserId, partnerId]),
+        createdAt: Date.now(),
+        type: 'random'
+      });
+
+      // Join both users to the room
+      socket.join(matchId);
+      const partnerSocket = io.sockets.sockets.get(partner.socketId);
+      if (partnerSocket) {
+        partnerSocket.join(matchId);
+      }
+
+      // Update sessions
+      if (currentSessionToken) {
+        sessionManager.updateSession(currentSessionToken, { currentMatch: matchId });
+      }
+
+      // Notify current user with frontend expected format
+      socket.emit('random:matched', {
+        id: matchId,
+        type: 'random',
+        name: partner.username,
+        avatar: partner.avatar,
+        participants: [currentUserId, partnerId],
+        unreadCount: 0,
+        lastMessage: {
+          id: Date.now().toString(),
+          chatId: matchId,
+          senderId: 'system',
+          content: `Matched with ${partner.username}`,
+          timestamp: new Date(),
+          isRead: true,
+          type: 'system'
+        }
+      });
+
+      // Notify partner with frontend expected format
+      if (partnerSocket) {
+        partnerSocket.emit('random:matched', {
+          id: matchId,
+          type: 'random',
+          name: user.username,
+          avatar: user.avatar,
+          participants: [partnerId, currentUserId],
+          unreadCount: 0,
+          lastMessage: {
+            id: Date.now().toString(),
+            chatId: matchId,
+            senderId: 'system',
+            content: `Matched with ${user.username}`,
+            timestamp: new Date(),
+            isRead: true,
+            type: 'system'
+          }
+        });
+      }
+
+      console.log(`[MATCH] ${currentUserId} matched with ${partnerId} (room: ${matchId})`);
+    } else {
+      console.log(`[QUEUE] ${currentUserId} waiting in priority ${queueResult.priority}`);
+    }
+  });
+
+  // random:cancel - Frontend equivalent of cancelRandomChat
+  socket.on('random:cancel', () => {
+    if (currentUserId) {
+      matchmaking.removeFromQueue(currentUserId);
+      console.log(`[QUEUE_LEAVE] ${currentUserId} left queue`);
+    }
+  });
+
+  // private:request - Request private chat with a user
+  socket.on('private:request', (data) => {
+    if (!currentUserId || !data || !data.targetUserId) {
+      return;
+    }
+
+    const targetUser = users.get(data.targetUserId);
+    const currentUser = users.get(currentUserId);
+    
+    if (!targetUser || !currentUser) {
+      socket.emit('error', { message: 'User not found' });
+      return;
+    }
+
+    const targetSocket = io.sockets.sockets.get(targetUser.socketId);
+    if (targetSocket) {
+      targetSocket.emit('private:request', {
+        requesterId: currentUserId,
+        requesterName: currentUser.username,
+        requesterAvatar: currentUser.avatar
+      });
+      console.log(`[PRIVATE_REQUEST] ${currentUser.username} -> ${targetUser.username}`);
+    }
+  });
+
+  // private:request:response - Accept or decline private chat request
+  socket.on('private:request:response', (data) => {
+    if (!currentUserId || !data) {
+      return;
+    }
+
+    const { accepted, requesterId } = data;
+    const requester = users.get(requesterId);
+    const currentUser = users.get(currentUserId);
+    
+    if (!requester || !currentUser) {
+      return;
+    }
+
+    const requesterSocket = io.sockets.sockets.get(requester.socketId);
+    
+    if (accepted) {
+      // Create private chat room
+      const chatId = `private-${uuidv4()}`;
+      
+      privateChatRooms.set(chatId, {
+        id: chatId,
+        participants: new Set([currentUserId, requesterId]),
+        createdAt: Date.now(),
+        type: 'private'
+      });
+
+      // Join both users to the room
+      socket.join(chatId);
+      if (requesterSocket) {
+        requesterSocket.join(chatId);
+      }
+
+      // Notify both users
+      socket.emit('private:start', {
+        chatId,
+        partnerId: requesterId,
+        partnerName: requester.username,
+        partnerAvatar: requester.avatar
+      });
+
+      if (requesterSocket) {
+        requesterSocket.emit('private:start', {
+          chatId,
+          partnerId: currentUserId,
+          partnerName: currentUser.username,
+          partnerAvatar: currentUser.avatar
+        });
+      }
+
+      console.log(`[PRIVATE_START] Chat between ${currentUser.username} and ${requester.username}`);
+    } else {
+      // Notify requester of decline
+      if (requesterSocket) {
+        requesterSocket.emit('private:request:response', {
+          accepted: false,
+          targetUserId: currentUserId
+        });
+      }
+      console.log(`[PRIVATE_DECLINED] ${currentUser.username} declined ${requester.username}`);
+    }
+  });
+
+  // room:join - Join a public room
+  socket.on('room:join', (data) => {
+    if (!currentUserId || !data || !data.roomId) {
+      return;
+    }
+
+    const room = publicRooms.get(data.roomId);
+    if (!room) {
+      socket.emit('error', { message: 'Room not found' });
+      return;
+    }
+
+    socket.join(data.roomId);
+    room.participants.add(currentUserId);
+
+    // Update session
+    if (currentSessionToken) {
+      sessionManager.updateSession(currentSessionToken, { currentRoom: data.roomId });
+    }
+
+    // Update admin metrics
+    adminMetrics.updateRoomStats(data.roomId, room.name, room.participants.size);
+
+    // Send system message to room
+    const user = users.get(currentUserId);
+    const systemMessage = {
+      id: `msg-${uuidv4()}`,
+      chatId: data.roomId,
+      senderId: 'system',
+      content: `${user?.username} joined the room`,
+      timestamp: new Date(),
+      isRead: true,
+      type: 'system'
+    };
+    
+    socket.to(data.roomId).emit('message:receive', systemMessage);
+    socket.emit('message:receive', systemMessage);
+
+    broadcastRoomsList();
+    console.log(`[ROOM_JOIN] ${currentUserId} joined ${room.name}`);
+  });
+
+  // chat:leave - Leave a chat
+  socket.on('chat:leave', (data) => {
+    if (!currentUserId || !data || !data.chatId) {
+      return;
+    }
+
+    const room = publicRooms.get(data.chatId) || privateChatRooms.get(data.chatId);
+    if (room) {
+      socket.leave(data.chatId);
+      room.participants.delete(currentUserId);
+
+      const user = users.get(currentUserId);
+      socket.to(data.chatId).emit('message:receive', {
+        id: `msg-${uuidv4()}`,
+        chatId: data.chatId,
+        senderId: 'system',
+        content: `${user?.username} left the chat`,
+        timestamp: new Date(),
+        isRead: true,
+        type: 'system'
+      });
+
+      // Clean up private rooms
+      if (privateChatRooms.has(data.chatId) && room.participants.size === 0) {
+        privateChatRooms.delete(data.chatId);
+      }
+
+      broadcastRoomsList();
+      console.log(`[CHAT_LEAVE] ${currentUserId} left ${data.chatId}`);
+    }
+  });
+
+  // message:send - Send a message (frontend compatible)
+  socket.on('message:send', (data) => {
+    if (!currentUserId || !data || !data.chatId || !data.content) {
+      return;
+    }
+
+    if (!checkRateLimit(currentUserId, 'message')) {
+      socket.emit('error', { message: 'Rate limit exceeded' });
+      return;
+    }
+
+    const content = sanitize(data.content).substring(0, 1000);
+    if (!content) {
+      return;
+    }
+
+    const user = users.get(currentUserId);
+    if (!user) {
+      return;
+    }
+
+    // Check for spam
+    const isSpam = content.length > 500 || /(.)\1{10,}/.test(content);
+    reputationSystem.recordMessage(currentUserId, isSpam);
+
+    if (isSpam) {
+      socket.emit('error', { message: 'Spam detected' });
+      return;
+    }
+
+    const messageId = `msg-${uuidv4()}`;
+    const messageData = {
+      id: messageId,
+      chatId: data.chatId,
+      senderId: currentUserId,
+      senderName: user.username,
+      senderAvatar: user.avatar,
+      content: content,
+      timestamp: new Date(),
+      isRead: false,
+      type: 'text'
+    };
+
+    // Add to session buffer
+    if (currentSessionToken) {
+      sessionManager.addMessageToBuffer(currentSessionToken, messageData);
+    }
+
+    // Send to room (include sender for acknowledgment)
+    socket.to(data.chatId).emit('message:receive', messageData);
+    
+    // Send acknowledgment to sender
+    if (data.tempId) {
+      socket.emit('message:ack', { tempId: data.tempId, messageId: messageId });
+    }
+
+    // Record metrics
+    adminMetrics.recordMessage();
+
+    console.log(`[MESSAGE] ${user.username} in ${data.chatId}: ${content.substring(0, 50)}...`);
+  });
+
+  // user:report - Report a user
+  socket.on('user:report', (data) => {
+    if (!currentUserId || !data || !data.reportedUserId) {
+      return;
+    }
+
+    if (!checkRateLimit(currentUserId, 'report')) {
+      socket.emit('error', { message: 'Rate limit exceeded' });
+      return;
+    }
+
+    const reason = data.reason || 'No reason provided';
+
+    // Record report in reputation system
+    reputationSystem.recordReport(data.reportedUserId);
+
+    // Record in admin metrics
+    adminMetrics.recordReport(data.reportedUserId);
+
+    console.log(`[REPORT] ${currentUserId} reported ${data.reportedUserId} for: ${reason}`);
+  });
+
+  // typing - Typing indicator (frontend compatible - receives object)
+  socket.on('typing', (data) => {
+    if (!currentUserId) return;
+    
+    // Handle both formats: object {chatId, isTyping} or string roomId
+    const chatId = typeof data === 'object' ? data.chatId : data;
+    const isTyping = typeof data === 'object' ? data.isTyping : true;
+    
+    if (!chatId || !checkRateLimit(currentUserId, 'typing')) return;
+
+    if (isTyping) {
+      if (!typingUsers.has(chatId)) {
+        typingUsers.set(chatId, new Set());
+      }
+      typingUsers.get(chatId).add(currentUserId);
+      
+      socket.to(chatId).emit('typing', {
+        chatId: chatId,
+        isTyping: true
+      });
+
+      // Clear typing indicator after 3 seconds
+      setTimeout(() => {
+        const typing = typingUsers.get(chatId);
+        if (typing) {
+          typing.delete(currentUserId);
+          socket.to(chatId).emit('typing', { chatId: chatId, isTyping: false });
+        }
+      }, 3000);
+    } else {
+      const typing = typingUsers.get(chatId);
+      if (typing) {
+        typing.delete(currentUserId);
+        socket.to(chatId).emit('typing', { chatId: chatId, isTyping: false });
+      }
+    }
+  });
+
+  // ============================================
   // 11. DISCONNECT HANDLER
   // ============================================
   
@@ -1154,11 +1715,12 @@ io.on('connection', (socket) => {
 // START SERVER
 // ===================================================================================
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`📊 Admin endpoint: /admin/metrics (requires X-Admin-Key header)`);
   console.log(`🔐 Set ADMIN_KEY environment variable for admin access`);
+  console.log(`🌐 CORS origins: ${ALLOWED_ORIGINS.join(', ')}`);
 });
 
 // Graceful shutdown
