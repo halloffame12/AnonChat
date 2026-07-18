@@ -7,7 +7,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isConnecting: boolean;
   connectionError: string | null;
-  login: (username: string, age: number, gender: Gender, location?: string) => Promise<void>;
+  login: (username: string, age: number, gender: Gender, location?: string, interests?: string[]) => Promise<void>;
   logout: () => void;
 }
 
@@ -95,7 +95,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []);
 
-  const login = useCallback(async (username: string, age: number, gender: Gender, location?: string) => {
+  const login = useCallback(async (username: string, age: number, gender: Gender, location?: string, interests?: string[]) => {
     setIsConnecting(true);
     setConnectionError(null);
     
@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, age, gender, location }),
+        body: JSON.stringify({ username, age, gender, location, interests }),
       });
 
       if (!response.ok) {

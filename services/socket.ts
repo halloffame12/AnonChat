@@ -14,10 +14,9 @@ class SocketService {
   private listeners: Record<string, Listener[]> = {};
   private currentToken: string | null = null;
   private reconnectAttempts: number = 0;
-  private maxReconnectAttempts: number = 5;
+  private maxReconnectAttempts: number = 10;
 
   connect(token: string) {
-    // Store token for potential reconnection
     this.currentToken = token;
     this.reconnectAttempts = 0;
     
@@ -35,7 +34,8 @@ class SocketService {
       reconnection: true,
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+      reconnectionDelayMax: 15000,
+      randomizationFactor: 0.5,
       timeout: 20000
     });
 
@@ -77,21 +77,18 @@ class SocketService {
       'rooms:update',
       'private:request',
       'private:request:response',
-      'private:start', 
+      'private:start',
       'random:matched',
       'message:receive',
       'message:ack',
+      'message:delivered',
+      'message:read',
+      'message:reaction:update',
+      'message:failed',
       'typing',
-      // Legacy events for backward compatibility
-      'presence:update',
-      'group:message',
-      'private:message',
-      'matchFound',
-      'newMessage',
-      'userTyping',
-      'userStoppedTyping',
-      'onlineUsersUpdate',
-      'roomsListUpdate'
+      'server:shutdown',
+      'partnerSkipped',
+      'partnerDisconnected'
     ];
 
     eventsToForward.forEach(event => {
@@ -150,18 +147,6 @@ class SocketService {
     }
   }
 
-  // Remove ALL listeners for an event (useful for cleanup)
-  removeAllListenersForEvent(event: string) {
-    if (this.listeners[event]) {
-      delete this.listeners[event];
-    }
-  }
-
-  // Get listener count for debugging
-  getListenerCount(event: string): number {
-    return this.listeners[event]?.length || 0;
-  }
-
   // Get all listener counts (for debugging)
   getAllListenerCounts(): Record<string, number> {
     const counts: Record<string, number> = {};
@@ -172,21 +157,15 @@ class SocketService {
   }
 
   // Emit event from React components to the Server
-  send(event: string, data: any) {
+  send(event: string, data?: any, callback?: (...args: any[]) => void) {
     if (this.socket && this.socket.connected) {
-      this.socket.emit(event, data);
+      if (callback) {
+        this.socket.emit(event, data, callback);
+      } else {
+        this.socket.emit(event, data);
+      }
     } else {
       console.warn('[Socket] Cannot send message: Socket not connected');
-    }
-  }
-
-  // Emit with callback
-  sendWithCallback(event: string, data: any, callback: (response: any) => void) {
-    if (this.socket && this.socket.connected) {
-      this.socket.emit(event, data, callback);
-    } else {
-      console.warn('[Socket] Cannot send message: Socket not connected');
-      callback({ success: false, error: 'Not connected' });
     }
   }
 

@@ -10,9 +10,10 @@ export interface User {
   age: number;
   gender: Gender;
   location?: string;
-  avatar: string; // New avatar URL field
+  avatar: string;
   isOnline: boolean;
   lastSeen?: Date;
+  interests?: string[];
 }
 
 export enum ChatType {
@@ -21,27 +22,53 @@ export enum ChatType {
   Random = 'random',
 }
 
+export interface ReplyTo {
+  messageId: string;
+  content: string;
+  senderName: string;
+}
+
+export interface MessageReaction {
+  emoji: string;
+  count: number;
+  reactors: string[];
+  hasReacted: boolean;
+}
+
+export interface MessageAttachment {
+  type: 'image' | 'gif';
+  url: string;
+  thumbnail?: string;
+  width?: number;
+  height?: number;
+}
+
 export interface Message {
   id: string;
   chatId: string;
   senderId: string;
-  senderName?: string; // Helpful for group chats
-  senderAvatar?: string; // Helpful for group chats
+  senderName?: string;
+  senderAvatar?: string;
   content: string;
   timestamp: Date;
   isRead: boolean;
-  type: 'text' | 'system';
+  type: 'text' | 'system' | 'image' | 'gif';
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+  replyTo?: ReplyTo;
+  reactions?: MessageReaction[];
+  attachment?: MessageAttachment;
 }
 
 export interface ChatSession {
   id: string;
   type: ChatType;
-  name: string; // Group name or Other User's name
-  avatar?: string; // URL or placeholder
-  participants: string[]; // User IDs
+  name: string;
+  avatar?: string;
+  participants: string[];
   lastMessage?: Message;
   unreadCount: number;
   isTyping?: boolean;
+  readReceiptsEnabled?: boolean;
 }
 
 export interface ToastNotification {

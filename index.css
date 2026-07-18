@@ -2,23 +2,98 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Scrollbar hiding for cleaner UI */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+@layer base {
+  body {
+    -webkit-tap-highlight-color: transparent;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  ::selection {
+    @apply bg-primary/20 text-primary-dark;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #d4c7b8;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #c0ae99;
+  }
 }
 
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+@layer components {
+  .card-warm {
+    @apply bg-white rounded-3xl shadow-soft border border-warm-100;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-2xl font-bold text-white
+           bg-gradient-to-r from-primary to-primary-dark
+           shadow-warm hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]
+           transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-2xl font-bold
+           bg-white text-dark border-2 border-warm-200
+           hover:bg-warm-50 hover:border-primary/30 active:scale-[0.98]
+           transition-all duration-200;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-xl font-medium
+           text-warm-700 hover:bg-warm-100 active:scale-[0.98]
+           transition-all duration-200;
+  }
+
+  .input-warm {
+    @apply w-full px-4 py-3 bg-warm-50 border-2 border-warm-200 rounded-2xl
+           text-dark placeholder:text-warm-400
+           focus:outline-none focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10
+           transition-all duration-200 text-base;
+  }
+
+  .badge-online {
+    @apply w-3 h-3 bg-green-500 rounded-full border-2 border-white;
+  }
+
+  .badge-count {
+    @apply absolute -top-1.5 -right-1.5 w-5 h-5 bg-accent text-white text-[10px] font-bold
+           flex items-center justify-center rounded-full border-2 border-white shadow-sm;
+  }
 }
 
-body {
-  -webkit-tap-highlight-color: transparent;
-}
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 
-/* Mobile safe area support for notch devices */
-.safe-area-bottom {
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(124, 92, 191, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124, 92, 191, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
 }
 
 /* Prevent viewport zoom on input focus (iOS) */
@@ -31,11 +106,50 @@ input, textarea, select {
   body {
     min-height: -webkit-fill-available;
   }
+  .h-screen-safe {
+    height: -webkit-fill-available;
+  }
 }
 
-/* Ensure chat input stays visible above mobile keyboard */
+/* Mobile chat input */
 @media (max-width: 768px) {
   textarea {
-    max-height: 120px !important;
+    max-height: 100px !important;
   }
+}
+
+/* prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Typing animation dots */
+.typing-dot {
+  @apply w-1.5 h-1.5 rounded-full bg-primary;
+  animation: typingBounce 1.4s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* Message slide-in */
+.message-enter {
+  animation: messageSlide 0.3s ease-out forwards;
+}
+@keyframes messageSlide {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Background gradient blob */
+.gradient-blob {
+  @apply absolute rounded-full blur-3xl opacity-20 pointer-events-none;
 }

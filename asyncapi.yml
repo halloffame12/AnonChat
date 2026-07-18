@@ -1,0 +1,422 @@
+asyncapi: 2.6.0
+info:
+  title: AnonChat Live WebSocket API
+  version: 2.0.0
+  description: |
+    Anonymous real-time chat platform WebSocket event contract.
+    Protocol versioning: All events are prefixed with semantic namespacing (e.g., `message:send`, `room:join`).
+    Breaking changes will be signaled by a new major protocol version.
+  contact:
+    name: AnonChat Team
+    url: https://github.com/halloffame12/AnonChat
+
+servers:
+  production:
+    url: wss://your-server.com
+    protocol: wss
+    description: Production WebSocket server
+  development:
+    url: ws://localhost:3001
+    protocol: ws
+    description: Local development server
+
+defaultContentType: application/json
+
+channels:
+  random:search:
+    description: Start searching for a random match
+    publish:
+      operationId: startRandomSearch
+      summary: Add user to matchmaking queue
+      message:
+        payload:
+          type: object
+          properties:
+            userId:
+              type: string
+              description: Authenticated user ID
+            interests:
+              type: array
+              items:
+                type: string
+              description: Interest tags for compatibility matching
+
+  random:cancel:
+    description: Cancel random match search
+    publish:
+      operationId: cancelRandomSearch
+      summary: Remove user from matchmaking queue
+      message:
+        payload:
+          type: object
+
+  random:matched:
+    description: Random match found notification
+    subscribe:
+      operationId: onRandomMatched
+      summary: Notifies both users when a match is found
+      message:
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+              description: Match/chat room ID
+            type:
+              type: string
+              enum: [random]
+            name:
+              type: string
+              description: Partner's username
+            avatar:
+              type: string
+            participants:
+              type: array
+              items:
+                type: string
+            unreadCount:
+              type: integer
+            lastMessage:
+              type: object
+              properties:
+                content:
+                  type: string
+                type:
+                  type: string
+                  enum: [system]
+
+  message:send:
+    description: Send a message to a chat room
+    publish:
+      operationId: sendMessage
+      summary: Send a message with optimistic updates
+      message:
+        payload:
+          type: object
+          required: [chatId, content, senderId, tempId]
+          properties:
+            chatId:
+              type: string
+            content:
+              type: string
+              maxLength: 1000
+            senderId:
+              type: string
+            tempId:
+              type: string
+              description: Client-generated temp ID for optimistic reconciliation
+            replyTo:
+              type: object
+              properties:
+                messageId:
+                  type: string
+                content:
+                  type: string
+                senderName:
+                  type: string
+            attachment:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [image, gif]
+                url:
+                  type: string
+                thumbnail:
+                  type: string
+
+  message:receive:
+    description: Receive a new message
+    subscribe:
+      operationId: onMessageReceive
+      summary: Broadcast message to all room participants
+      message:
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+            chatId:
+              type: string
+            senderId:
+              type: string
+            senderName:
+              type: string
+            content:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+            type:
+              type: string
+              enum: [text, system, image, gif]
+            status:
+              type: string
+              enum: [sending, sent, delivered, read, failed]
+            replyTo:
+              type: object
+            reactions:
+              type: array
+              items:
+                type: object
+                properties:
+                  emoji:
+                    type: string
+                  count:
+                    type: integer
+                  hasReacted:
+                    type: boolean
+
+  message:ack:
+    description: Server acknowledges a sent message
+    subscribe:
+      operationId: onMessageAck
+      summary: Used for optimistic UI reconciliation
+      message:
+        payload:
+          type: object
+          properties:
+            tempId:
+              type: string
+            messageId:
+              type: string
+
+  message:react:
+    description: Toggle emoji reaction on a message
+    publish:
+      operationId: reactToMessage
+      summary: Add or remove an emoji reaction
+      message:
+        payload:
+          type: object
+          required: [messageId, emoji]
+          properties:
+            messageId:
+              type: string
+            emoji:
+              type: string
+
+  message:reaction:update:
+    description: Reaction state changed
+    subscribe:
+      operationId: onReactionUpdate
+      summary: Broadcast updated reactions to the room
+      message:
+        payload:
+          type: object
+          properties:
+            messageId:
+              type: string
+            reactions:
+              type: array
+              items:
+                type: object
+            userId:
+              type: string
+            added:
+              type: boolean
+            emoji:
+              type: string
+
+  message:read:
+    publish:
+      operationId: markMessagesRead
+      summary: Mark messages as read
+      message:
+        payload:
+          type: object
+          properties:
+            chatId:
+              type: string
+            messageIds:
+              type: array
+              items:
+                type: string
+    subscribe:
+      operationId: onMessagesRead
+      summary: Receive read receipts
+      message:
+        payload:
+          type: object
+          properties:
+            chatId:
+              type: string
+            messageIds:
+              type: array
+              items:
+                type: string
+            readBy:
+              type: string
+
+  typing:
+    publish:
+      operationId: sendTyping
+      summary: Send typing indicator with start/stop
+      message:
+        payload:
+          type: object
+          properties:
+            chatId:
+              type: string
+            isTyping:
+              type: boolean
+    subscribe:
+      operationId: onTyping
+      summary: Receive typing indicators with animated dots support
+      message:
+        payload:
+          type: object
+          properties:
+            chatId:
+              type: string
+            isTyping:
+              type: boolean
+            username:
+              type: string
+
+  private:request:
+    publish:
+      operationId: requestPrivateChat
+      message:
+        payload:
+          type: object
+          properties:
+            targetUserId:
+              type: string
+    subscribe:
+      operationId: onPrivateChatRequest
+      message:
+        payload:
+          type: object
+          properties:
+            requesterId:
+              type: string
+            requesterName:
+              type: string
+            requesterAvatar:
+              type: string
+
+  private:request:response:
+    publish:
+      operationId: respondToPrivateChat
+      message:
+        payload:
+          type: object
+          properties:
+            accepted:
+              type: boolean
+            requesterId:
+              type: string
+    subscribe:
+      operationId: onPrivateChatResponse
+      message:
+        payload:
+          type: object
+          properties:
+            accepted:
+              type: boolean
+            targetUserId:
+              type: string
+
+  private:start:
+    subscribe:
+      operationId: onPrivateChatStarted
+      message:
+        payload:
+          type: object
+          properties:
+            chatId:
+              type: string
+            partnerId:
+              type: string
+            partnerName:
+              type: string
+            partnerAvatar:
+              type: string
+
+  room:join:
+    publish:
+      operationId: joinRoom
+      message:
+        payload:
+          type: object
+          properties:
+            roomId:
+              type: string
+
+  chat:leave:
+    publish:
+      operationId: leaveChat
+      message:
+        payload:
+          type: object
+          properties:
+            chatId:
+              type: string
+
+  user:report:
+    publish:
+      operationId: reportUser
+      message:
+        payload:
+          type: object
+          properties:
+            reportedUserId:
+              type: string
+            reason:
+              type: string
+            messageSnapshots:
+              type: array
+              items:
+                type: object
+
+  lobby:update:
+    subscribe:
+      operationId: onLobbyUpdate
+      message:
+        payload:
+          type: object
+          properties:
+            activeUsers:
+              type: integer
+            users:
+              type: array
+
+  rooms:update:
+    subscribe:
+      operationId: onRoomsUpdate
+      message:
+        payload:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              participants:
+                type: integer
+
+  server:shutdown:
+    subscribe:
+      operationId: onServerShutdown
+      summary: Graceful shutdown notification
+      message:
+        payload:
+          type: object
+          properties:
+            message:
+              type: string
+            reconnectAfter:
+              type: integer
+
+  error:
+    subscribe:
+      operationId: onError
+      message:
+        payload:
+          type: object
+          properties:
+            message:
+              type: string
