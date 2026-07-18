@@ -217,7 +217,7 @@ const AppContent: React.FC = () => {
   if (!isAuthenticated) return <LoginModal />;
 
   return (
-    <div className="flex h-screen h-[100dvh] h-screen-safe bg-warm-50 overflow-hidden relative font-sans">
+    <div className="flex h-screen h-screen-safe bg-warm-50 overflow-hidden relative font-sans">
       {/* Reconnection banner */}
       {isReconnecting && (
         <div className="absolute top-0 left-0 right-0 z-50 bg-amber-500 text-white px-4 py-2.5 flex items-center justify-center gap-2 animate-fade-in-down shadow-lg">
