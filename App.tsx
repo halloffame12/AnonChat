@@ -271,7 +271,7 @@ const AppContent: React.FC = () => {
       </div>
 
       {/* Chat area */}
-      <div className={`flex-1 flex flex-col h-full bg-white shadow-xl relative z-10 ${!activeSessionId ? 'hidden md:flex' : 'flex w-full'}`}>
+      <div className={`flex-1 flex flex-col h-full bg-white shadow-xl relative z-10 ${!activeSessionId ? 'flex' : 'flex w-full'}`}>
         {activeSession ? (
           <ChatWindow
             session={activeSession}
