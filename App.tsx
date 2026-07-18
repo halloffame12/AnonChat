@@ -227,16 +227,14 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
-      {/* Mobile sidebar toggle (only visible when chat is active on mobile) */}
-      {activeSessionId && (
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="fixed bottom-6 left-4 z-30 md:hidden w-12 h-12 bg-white rounded-2xl shadow-soft border border-warm-200 flex items-center justify-center text-primary hover:bg-warm-50 active:scale-95 transition-all"
-          aria-label="Open menu"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-      )}
+      {/* Mobile sidebar toggle */}
+      <button
+        onClick={() => setSidebarOpen(true)}
+        className="fixed bottom-6 left-4 z-30 md:hidden w-12 h-12 bg-white rounded-2xl shadow-soft border border-warm-200 flex items-center justify-center text-primary hover:bg-warm-50 active:scale-95 transition-all"
+        aria-label="Open menu"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
 
       {/* Mobile sidebar drawer */}
       {sidebarOpen && (
