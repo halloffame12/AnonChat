@@ -13,3 +13,13 @@ root.render(
     <App />
   </React.StrictMode>
 );
+
+// Register the service worker for PWA installability + offline shell caching.
+// Only enable on HTTPS (secure contexts) and not during local dev.
+if ('serviceWorker' in navigator && (import.meta as any).env?.PROD && window.isSecureContext) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.warn('[PWA] Service worker registration failed:', err);
+    });
+  });
+}

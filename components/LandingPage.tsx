@@ -39,7 +39,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
   };
 
   return (
-    <div ref={containerRef} className="h-screen w-full bg-warm-50 text-dark overflow-y-auto overflow-x-hidden font-sans relative scroll-smooth selection:bg-primary/20">
+    <div ref={containerRef} className="h-screen h-[100dvh] w-full bg-warm-50 text-dark overflow-y-auto overflow-x-hidden font-sans relative scroll-smooth selection:bg-primary/20">
       {/* Decorative background blobs */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="gradient-blob w-[500px] h-[500px] bg-primary/10 -top-32 -left-32" />
