@@ -120,7 +120,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto no-scrollbar px-3 pb-3">
+      <div className="flex-1 overflow-y-auto no-scrollbar px-3 pb-3 chat-scroll-area">
         {activeTab === 'chats' && (
           <div className="space-y-1.5">
             {/* Random Match button */}

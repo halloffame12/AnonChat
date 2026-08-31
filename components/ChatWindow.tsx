@@ -35,6 +35,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
   const [replyTo, setReplyTo] = useState<ReplyTo | null>(null);
   const [reactingToMessage, setReactingToMessage] = useState<string | null>(null);
   const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(session.readReceiptsEnabled !== false);
+  const [tappedMessageId, setTappedMessageId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<any>(null);
@@ -450,8 +451,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
       {/* Messages Area */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-3 bg-warm-50/50 scroll-smooth"
-        onClick={() => { setMenuOpen(false); setShowEmoji(false); setReactingToMessage(null); }}
+        className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-3 bg-warm-50/50 scroll-smooth chat-scroll-area"
+        onClick={() => { setMenuOpen(false); setShowEmoji(false); setReactingToMessage(null); setTappedMessageId(null); }}
       >
         {messages.map((msg, index) => {
           if (msg.type === 'system') {
@@ -469,7 +470,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
 
           return (
             <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} message-enter group`}>
-              <div className={`flex items-end gap-2 max-w-[88%] md:max-w-[72%] ${isMe ? 'flex-row-reverse' : ''}`}>
+              <div
+                className={`flex items-end gap-2 max-w-[88%] md:max-w-[72%] ${isMe ? 'flex-row-reverse' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (window.matchMedia('(hover: none)').matches) {
+                    setTappedMessageId(tappedMessageId === msg.id ? null : msg.id);
+                    setReactingToMessage(null);
+                  }
+                }}
+              >
                 {/* Avatar — only show for non-sequence, non-self */}
                 {!isMe && !isSequence && (
                   <div className="shrink-0 mb-1">
@@ -528,20 +538,22 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
                   </div>
 
                   {/* Message actions bar */}
-                  <div className={`flex gap-0.5 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${isMe ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`flex gap-0.5 mt-0.5 transition-opacity ${
+                    (tappedMessageId === msg.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  } ${isMe ? 'justify-end' : 'justify-start'}`}>
                     <button
-                      onClick={() => handleReplyTo(msg)}
-                      className="p-1 text-warm-400 hover:text-primary transition-colors"
+                      onClick={(e) => { e.stopPropagation(); handleReplyTo(msg); }}
+                      className="p-1.5 text-warm-400 hover:text-primary transition-colors active:scale-90"
                       title="Reply"
                     >
-                      <Reply className="w-3 h-3" />
+                      <Reply className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => setReactingToMessage(reactingToMessage === msg.id ? null : msg.id)}
-                      className="p-1 text-warm-400 hover:text-yellow-500 transition-colors"
+                      onClick={(e) => { e.stopPropagation(); setReactingToMessage(reactingToMessage === msg.id ? null : msg.id); }}
+                      className="p-1.5 text-warm-400 hover:text-yellow-500 transition-colors active:scale-90"
                       title="React"
                     >
-                      <Smile className="w-3 h-3" />
+                      <Smile className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
@@ -551,8 +563,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
                       {EMOJI_REACTION_LIST.map(emoji => (
                         <button
                           key={emoji}
-                          onClick={() => handleReact(msg.id, emoji)}
-                          className="w-7 h-7 flex items-center justify-center text-base hover:bg-warm-100 rounded-full transition-all hover:scale-125"
+                          onClick={(e) => { e.stopPropagation(); handleReact(msg.id, emoji); }}
+                          className="w-8 h-8 flex items-center justify-center text-base hover:bg-warm-100 rounded-full transition-all hover:scale-125 active:scale-95"
                         >
                           {emoji}
                         </button>
@@ -594,16 +606,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
       )}
 
       {/* Input Area */}
-      <div className="px-4 md:px-6 py-3 md:py-4 bg-white border-t border-warm-100 z-20 relative safe-area-bottom">
+      <div className="px-4 md:px-6 py-3 md:py-4 bg-white border-t border-warm-100 z-20 relative safe-area-bottom shrink-0">
         {showEmoji && (
           <div className="absolute bottom-full left-4 mb-2 z-50 shadow-2xl rounded-2xl animate-fade-in-up">
-            <EmojiPicker onEmojiClick={onEmojiClick} height={350} width={300} />
+            <EmojiPicker onEmojiClick={onEmojiClick} height={350} width={Math.min(300, window.innerWidth - 32)} />
           </div>
         )}
 
         <div className="flex items-end gap-2 bg-warm-50 p-1.5 rounded-3xl border-2 border-warm-200 focus-within:ring-4 focus-within:ring-primary/10 focus-within:border-primary transition-all shadow-sm">
           <button
-            onClick={() => setShowEmoji(!showEmoji)}
+            onClick={() => { setShowEmoji(!showEmoji); setTappedMessageId(null); }}
             aria-label="Emoji"
             className={`p-2.5 rounded-full transition-colors shrink-0 ${
               showEmoji ? 'text-primary bg-primary/10' : 'text-warm-400 hover:text-primary hover:bg-white'

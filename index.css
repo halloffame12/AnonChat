@@ -7,8 +7,13 @@
     height: 100%;
   }
 
+  html {
+    overscroll-behavior: none;
+  }
+
   body {
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
@@ -98,6 +103,16 @@
       linear-gradient(90deg, rgba(124, 92, 191, 0.03) 1px, transparent 1px);
     background-size: 40px 40px;
   }
+
+  .chat-scroll-area {
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-shell {
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
 }
 
 /* Prevent viewport zoom on input focus (iOS) */
@@ -118,8 +133,13 @@ input, textarea, select {
 /* Mobile chat input */
 @media (max-width: 768px) {
   textarea {
-    max-height: 100px !important;
+    max-height: 140px !important;
   }
+}
+
+/* Message actions — touch reveal */
+.msg-actions-touch {
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* prefers-reduced-motion */

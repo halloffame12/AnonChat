@@ -217,7 +217,7 @@ const AppContent: React.FC = () => {
   if (!isAuthenticated) return <LoginModal />;
 
   return (
-    <div className="flex h-screen h-screen-safe bg-warm-50 overflow-hidden relative font-sans">
+    <div className="flex h-screen h-screen-safe bg-warm-50 overflow-hidden relative font-sans app-shell">
       {/* Reconnection banner */}
       {isReconnecting && (
         <div className="absolute top-0 left-0 right-0 z-50 bg-amber-500 text-white px-4 py-2.5 flex items-center justify-center gap-2 animate-fade-in-down shadow-lg">
@@ -230,7 +230,7 @@ const AppContent: React.FC = () => {
       {/* Mobile sidebar toggle */}
       <button
         onClick={() => setSidebarOpen(true)}
-        className="fixed bottom-6 left-4 z-30 md:hidden w-12 h-12 bg-white rounded-2xl shadow-soft border border-warm-200 flex items-center justify-center text-primary hover:bg-warm-50 active:scale-95 transition-all"
+        className="fixed bottom-5 left-4 safe-area-bottom z-30 md:hidden w-12 h-12 bg-white rounded-2xl shadow-soft border border-warm-200 flex items-center justify-center text-primary hover:bg-warm-50 active:scale-95 transition-all"
         aria-label="Open menu"
       >
         <Menu className="w-5 h-5" />
@@ -269,7 +269,7 @@ const AppContent: React.FC = () => {
       </div>
 
       {/* Chat area */}
-      <div className={`flex-1 flex flex-col h-full bg-white shadow-xl relative z-10 ${!activeSessionId ? 'flex' : 'flex w-full'}`}>
+      <div className={`flex-1 flex flex-col h-full bg-white shadow-xl relative z-10 min-w-0 ${!activeSessionId ? 'flex' : 'flex w-full'}`}>
         {activeSession ? (
           <ChatWindow
             session={activeSession}
@@ -364,7 +364,7 @@ const AppContent: React.FC = () => {
 
       {/* Toast notification */}
       {notification && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up w-auto max-w-[90vw] px-4">
+        <div className="fixed bottom-20 md:bottom-8 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up w-auto max-w-[90vw] px-4">
           <div className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-soft border ${
             notification.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' :
             notification.type === 'error' ? 'bg-red-50 border-red-200 text-red-600' :
