@@ -69,6 +69,7 @@ export interface ChatSession {
   unreadCount: number;
   isTyping?: boolean;
   readReceiptsEnabled?: boolean;
+  participantCount?: number;
 }
 
 export interface ToastNotification {

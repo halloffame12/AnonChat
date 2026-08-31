@@ -3,7 +3,7 @@ import { User, ChatSession, ChatType, Room } from '../types';
 import AvatarPeep, { AvatarPeepCluster } from './AvatarPeep';
 import {
   MessageSquare, Search, Zap, MapPin, Hash, Users, MessageCircle,
-  X, ChevronRight
+  X, ChevronRight, LogOut
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -18,6 +18,7 @@ interface SidebarProps {
   onJoinRoom: (roomId: string) => void;
   isOpen?: boolean;
   onClose?: () => void;
+  onLogout?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -31,7 +32,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   publicRooms,
   onJoinRoom,
   isOpen,
-  onClose
+  onClose,
+  onLogout
 }) => {
   const [activeTab, setActiveTab] = useState<'chats' | 'rooms' | 'users'>('chats');
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,10 +56,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div className="flex flex-col h-full bg-[#faf8f5] w-full">
       {/* Mobile close button */}
       {onClose && (
-        <div className="flex items-center justify-between px-5 pt-4 pb-2 md:hidden">
-          <span className="text-xs font-bold text-warm-400 uppercase tracking-wider">Menu</span>
-          <button onClick={onClose} className="p-2 hover:bg-warm-200 rounded-full transition-colors">
-            <X className="w-5 h-5 text-warm-500" />
+        <div className="flex items-center justify-between px-5 pt-3 pb-1 md:hidden">
+          <span className="text-xs font-bold text-warm-500 uppercase tracking-wider">Menu</span>
+          <button
+            onClick={onClose}
+            aria-label="Close menu"
+            className="icon-btn w-10 h-10"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
       )}
@@ -72,15 +78,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="min-w-0 flex-1">
             <h3 className="font-bold text-dark text-base leading-tight truncate">{currentUser.username}</h3>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-[10px] font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">Online</span>
-              <span className="text-[10px] text-warm-400">{currentUser.age} • {currentUser.gender}</span>
+              <span className="text-[10px] font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Online</span>
+              <span className="text-[11px] text-warm-500">{currentUser.age} • {currentUser.gender}</span>
             </div>
           </div>
-          {/* Online count badge */}
-          <div className="hidden md:flex items-center gap-1 text-[10px] text-warm-400 bg-warm-100 px-2 py-1 rounded-full font-medium">
+          {/* Online count badge (desktop) */}
+          <div className="hidden md:flex items-center gap-1 text-[11px] text-warm-500 bg-warm-100 px-2 py-1 rounded-full font-medium">
             <Users className="w-3 h-3" />
             {onlineUsers.length}
           </div>
+          {/* Logout */}
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              aria-label="Log out"
+              title="Log out"
+              className="p-2.5 rounded-full text-warm-500 hover:text-accent hover:bg-accent/10 transition-colors -mr-1"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -94,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all duration-200 capitalize ${
                 activeTab === tab
                   ? 'bg-white text-primary shadow-sm shadow-warm-200/50'
-                  : 'text-warm-500 hover:text-warm-700'
+                  : 'text-warm-600 hover:text-primary'
               }`}
             >
               {tab === 'chats' && <><MessageCircle className="w-3 h-3 inline-block mr-1" />Chats</>}
@@ -113,8 +130,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label={activeTab === 'users' ? "Search people" : `Search ${activeTab}`}
             placeholder={activeTab === 'users' ? "Search people..." : `Search ${activeTab}...`}
-            className="w-full pl-10 pr-4 py-2.5 bg-white border-2 border-warm-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-warm-400"
+            className="w-full pl-10 pr-4 py-3 bg-white border-2 border-warm-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-warm-400"
           />
         </div>
       </div>
@@ -242,7 +260,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onJoinRoom(room.id);
                       onClose?.();
                     }}
-                    className="px-4 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-xl hover:bg-primary hover:text-white transition-all shrink-0"
+                    className="px-5 py-2 bg-primary/10 text-primary-dark text-xs font-bold rounded-xl hover:bg-primary hover:text-white transition-all shrink-0 min-h-[38px]"
                   >
                     Join
                   </button>

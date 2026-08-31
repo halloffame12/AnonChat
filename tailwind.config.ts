@@ -41,7 +41,16 @@ export default {
       boxShadow: {
         'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
         'warm': '0 4px 20px rgba(124, 92, 191, 0.15)',
+        'warm-lg': '0 12px 32px -8px rgba(124, 92, 191, 0.28)',
+        'card': '0 1px 2px rgba(45, 35, 35, 0.04), 0 8px 24px -6px rgba(45, 35, 35, 0.10)',
+        'pop': '0 8px 30px rgba(45, 35, 35, 0.12)',
         'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.04)',
+      },
+      ringColor: {
+        DEFAULT: '#7c5cbf',
+      },
+      borderRadius: {
+        '4xl': '2rem',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out forwards',

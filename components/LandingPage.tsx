@@ -77,11 +77,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             </div>
           </a>
           <button
-          onClick={onGetStarted}
-          className="px-5 py-2.5 bg-primary text-white rounded-2xl font-bold text-sm shadow-warm hover:shadow-xl hover:scale-[1.03] active:scale-[0.97] transition-all"
-        >
-          Get Started
-        </button>
+            onClick={onGetStarted}
+            className="px-5 py-2.5 bg-primary text-white rounded-2xl font-bold text-sm shadow-warm hover:shadow-xl hover:scale-[1.03] active:scale-[0.97] transition-all"
+          >
+            Get Started
+          </button>
         </div>
       </nav>
 
@@ -132,7 +132,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
         </div>
 
         {/* Trust badges */}
-        <div className="flex flex-wrap items-center justify-center gap-6 mt-10 text-xs text-warm-400 font-medium animate-fade-in-up [animation-delay:0.4s]">
+        <div className="flex flex-wrap items-center justify-center gap-6 mt-10 text-xs text-warm-600 font-medium animate-fade-in-up [animation-delay:0.4s]">
           <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> No Sign-up</span>
           <span className="flex items-center gap-1.5"><Smile className="w-3.5 h-3.5" /> 100% Anonymous</span>
           <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Global Community</span>
@@ -374,7 +374,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               </a>
             </div>
           </div>
-          <div className="text-center text-xs text-warm-400">
+          <div className="text-center text-xs text-warm-500">
             &copy; 2024 AnonChat Live. Connecting the world anonymously.
           </div>
         </div>

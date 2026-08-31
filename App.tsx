@@ -10,7 +10,7 @@ import { ChatSession, ChatType, Message, User, Room } from './types';
 import { Loader2, CheckCircle, XCircle, X, Check, WifiOff, RefreshCw, Zap, Menu } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | undefined>();
   const [isSearching, setIsSearching] = useState(false);
@@ -33,6 +33,13 @@ const AppContent: React.FC = () => {
 
     const handleRoomsUpdate = (rooms: Room[]) => {
       setPublicRooms(rooms);
+      setSessions(prev => prev.map(s => {
+        if (s.type === ChatType.Group) {
+          const room = rooms.find(r => r.id === s.id);
+          if (room) return { ...s, participantCount: room.participants };
+        }
+        return s;
+      }));
     };
 
     const handlePrivateRequest = (data: { requesterId: string, requesterName: string, requesterAvatar?: string }) => {
@@ -85,7 +92,7 @@ const AppContent: React.FC = () => {
         const exists = prev.find(s => s.id === msg.chatId);
         if (!exists && msg.type === 'system' && msg.content.includes('joined')) {
           const room = publicRooms.find(r => r.id === msg.chatId);
-          if (room) return [{ id: room.id, type: ChatType.Group, name: room.name, participants: [], unreadCount: 0, lastMessage: msg }, ...prev];
+          if (room) return [{ id: room.id, type: ChatType.Group, name: room.name, participants: [], participantCount: room.participants, unreadCount: 0, lastMessage: msg }, ...prev];
         }
         return prev.map(s => s.id === msg.chatId ? { ...s, lastMessage: msg, unreadCount: s.id !== activeSessionId ? s.unreadCount + 1 : s.unreadCount } : s);
       });
@@ -166,6 +173,31 @@ const AppContent: React.FC = () => {
     };
   }, [isAuthenticated, activeSessionId, user]);
 
+  // Close overlays with Escape + lock body scroll while a modal/search is open
+  const overlayOpen = !!incomingRequest || isSearching;
+  useEffect(() => {
+    if (!overlayOpen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (incomingRequest) {
+          respondToRequest(false);
+        } else if (isSearching) {
+          setIsSearching(false);
+          socketService.send('random:cancel', {});
+        }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [overlayOpen, incomingRequest, isSearching]);
+
   const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
     setNotification({ message: msg, type });
     setTimeout(() => setNotification(null), 3000);
@@ -185,7 +217,9 @@ const AppContent: React.FC = () => {
     const room = publicRooms.find(r => r.id === roomId);
     if (room) {
       if (!sessions.find(s => s.id === roomId)) {
-        setSessions(prev => [{ id: room.id, type: ChatType.Group, name: room.name, participants: [], unreadCount: 0 }, ...prev]);
+        setSessions(prev => [{ id: room.id, type: ChatType.Group, name: room.name, participants: [], participantCount: room.participants, unreadCount: 0 }, ...prev]);
+      } else {
+        setSessions(prev => prev.map(s => s.id === roomId ? { ...s, participantCount: room.participants } : s));
       }
       setActiveSessionId(roomId);
       socketService.send('room:join', { roomId });
@@ -211,6 +245,14 @@ const AppContent: React.FC = () => {
     showToast('Left conversation', 'info');
   };
 
+  const handleLogout = () => {
+    logout();
+    setSessions([]);
+    setActiveSessionId(undefined);
+    setShowLanding(true);
+    setSidebarOpen(false);
+  };
+
   const activeSession = sessions.find(s => s.id === activeSessionId);
 
   if (showLanding) return <LandingPage onGetStarted={() => setShowLanding(false)} />;
@@ -227,14 +269,16 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
-      {/* Mobile sidebar toggle */}
-      <button
-        onClick={() => setSidebarOpen(true)}
-        className="fixed bottom-5 left-4 safe-area-bottom z-30 md:hidden w-12 h-12 bg-white rounded-2xl shadow-soft border border-warm-200 flex items-center justify-center text-primary hover:bg-warm-50 active:scale-95 transition-all"
-        aria-label="Open menu"
-      >
-        <Menu className="w-5 h-5" />
-      </button>
+      {/* Mobile sidebar toggle (hidden while a chat is open to avoid covering input) */}
+      {!activeSessionId && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="fixed bottom-5 left-4 safe-area-bottom z-30 md:hidden w-14 h-14 bg-white rounded-2xl shadow-pop border border-warm-200 flex items-center justify-center text-primary hover:bg-warm-50 active:scale-95 transition-all"
+          aria-label="Open menu"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+      )}
 
       {/* Mobile sidebar drawer */}
       {sidebarOpen && (
@@ -250,6 +294,7 @@ const AppContent: React.FC = () => {
           onJoinRoom={joinRoom}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          onLogout={handleLogout}
         />
       )}
 
@@ -265,6 +310,7 @@ const AppContent: React.FC = () => {
           onlineUsers={onlineUsers}
           publicRooms={publicRooms}
           onJoinRoom={joinRoom}
+          onLogout={handleLogout}
         />
       </div>
 
@@ -272,6 +318,7 @@ const AppContent: React.FC = () => {
       <div className={`flex-1 flex flex-col h-full bg-white shadow-xl relative z-10 min-w-0 ${!activeSessionId ? 'flex' : 'flex w-full'}`}>
         {activeSession ? (
           <ChatWindow
+            key={activeSession.id}
             session={activeSession}
             currentUser={user!}
             onBack={() => setActiveSessionId(undefined)}
@@ -280,12 +327,17 @@ const AppContent: React.FC = () => {
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center px-6 bg-gradient-to-b from-warm-50 to-white">
             <div className="max-w-sm text-center">
-              <AvatarPeep seed={user!.id} size={120} className="mb-6 shadow-xl ring-4 ring-white mx-auto" />
-              <h2 className="text-2xl font-extrabold text-dark mb-1">Welcome back, {user!.username}</h2>
-              <p className="text-warm-500 font-medium">Select a chat or find a stranger to talk to.</p>
+              <div className="relative inline-block mb-6">
+                <AvatarPeep seed={user!.id} size={112} className="shadow-xl ring-4 ring-white" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-[3px] border-white" />
+              </div>
+              <h2 className="text-2xl font-extrabold text-dark mb-2">Welcome back, {user!.username}</h2>
+              <p className="text-warm-500 font-medium mb-6">
+                Start a random chat, browse public rooms, or message someone new from the {`"People"`} tab.
+              </p>
               <button
                 onClick={startRandomChat}
-                className="btn-primary mt-6 w-full sm:w-auto px-8 py-3.5 text-base"
+                className="btn-primary w-full sm:w-auto px-8 py-3.5 text-base"
               >
                 <Zap className="w-5 h-5 fill-white mr-2" />
                 Start Random Chat
@@ -312,7 +364,12 @@ const AppContent: React.FC = () => {
 
       {/* Incoming request modal */}
       {incomingRequest && (
-        <div className="absolute inset-0 z-50 bg-dark/50 backdrop-blur-sm flex items-center justify-center animate-fade-in px-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Incoming chat request"
+          className="absolute inset-0 z-50 bg-dark/50 backdrop-blur-sm flex items-center justify-center animate-fade-in px-4"
+        >
           <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm animate-fade-in-up border border-warm-100">
             <div className="flex flex-col items-center text-center">
               <AvatarPeep seed={incomingRequest.requesterId} size={80} className="mb-4 ring-2 ring-white shadow-lg" />
@@ -341,7 +398,12 @@ const AppContent: React.FC = () => {
 
       {/* Search overlay */}
       {isSearching && (
-        <div className="absolute inset-0 z-50 bg-dark/60 backdrop-blur-md flex items-center justify-center animate-fade-in px-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Finding a random match"
+          className="absolute inset-0 z-50 bg-dark/60 backdrop-blur-md flex items-center justify-center animate-fade-in px-4"
+        >
           <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center animate-zoom-in max-w-xs w-full text-center">
             <AvatarPeep seed={user?.id || 'searching'} size={80} className="mb-4 ring-2 ring-white opacity-80" />
             <div className="relative mb-4">

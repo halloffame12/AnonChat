@@ -351,6 +351,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
     }
   };
 
+  const hasConversation = messages.some(m => m.type !== 'system');
+
   return (
     <div className="flex flex-col h-full bg-white relative w-full">
       {/* Header */}
@@ -360,7 +362,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
             <button
               onClick={onBack}
               aria-label="Back"
-              className="md:hidden p-2 -ml-2 text-warm-500 hover:bg-warm-100 rounded-full transition-colors"
+              className="md:hidden icon-btn w-10 h-10 -ml-1 -mr-1"
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
@@ -387,7 +389,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
                 </span>
               ) : (
                 <span className="text-warm-500 font-medium">
-                  {session.type === ChatType.Group ? `${session.participants.length} members` : 'Online'}
+                  {session.type === ChatType.Group
+                    ? `${session.participantCount ?? session.participants.length} members`
+                    : 'Online'}
                 </span>
               )}
             </div>
@@ -397,8 +401,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
         <div className="relative">
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Menu"
-            className="p-2.5 hover:bg-warm-100 rounded-full text-warm-500 transition-colors"
+            aria-label="Open chat menu"
+            aria-expanded={menuOpen}
+            className="icon-btn"
           >
             <MoreVertical className="w-5 h-5" />
           </button>
@@ -451,9 +456,32 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
       {/* Messages Area */}
       <div
         ref={messagesContainerRef}
+        role="log"
+        aria-live="polite"
+        aria-label="Chat messages"
         className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-3 bg-warm-50/50 scroll-smooth chat-scroll-area"
         onClick={() => { setMenuOpen(false); setShowEmoji(false); setReactingToMessage(null); setTappedMessageId(null); }}
       >
+        {!hasConversation && (
+          <div className="flex flex-col items-center justify-center text-center py-14 px-6 animate-fade-in">
+            {session.type === ChatType.Group ? (
+              <div className="w-16 h-16 rounded-3xl bg-sage/15 flex items-center justify-center mb-4">
+                <span className="text-sage font-bold text-3xl">{session.name.charAt(0)}</span>
+              </div>
+            ) : (
+              <AvatarPeep seed={session.id} size={64} className="ring-4 ring-white shadow-soft mb-4" />
+            )}
+            <h3 className="font-bold text-dark text-lg mb-1">
+              {session.type === ChatType.Group ? `Say hi to ${session.name}` : `You're connected`}
+            </h3>
+            <p className="text-sm text-warm-500 max-w-[260px] leading-relaxed">
+              {session.type === ChatType.Group
+                ? 'This room is empty right now. Send the first message to start the conversation.'
+                : 'Start the conversation with a friendly hello.'}
+            </p>
+          </div>
+        )}
+
         {messages.map((msg, index) => {
           if (msg.type === 'system') {
             return (
@@ -487,7 +515,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
                   </div>
                 )}
                 {!isMe && isSequence && <div className="w-[36px] shrink-0" />}
-                {isMe && !isSequence && <div className="w-[36px] shrink-0" />}
 
                 <div className="flex flex-col min-w-0" data-msg-id={msg.id}>
                   {!isMe && !isSequence && session.type === ChatType.Group && (
@@ -543,17 +570,19 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
                   } ${isMe ? 'justify-end' : 'justify-start'}`}>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleReplyTo(msg); }}
-                      className="p-1.5 text-warm-400 hover:text-primary transition-colors active:scale-90"
+                      className="p-2 text-warm-500 hover:text-primary transition-colors active:scale-90"
                       title="Reply"
+                      aria-label="Reply to this message"
                     >
-                      <Reply className="w-3.5 h-3.5" />
+                      <Reply className="w-4 h-4" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); setReactingToMessage(reactingToMessage === msg.id ? null : msg.id); }}
-                      className="p-1.5 text-warm-400 hover:text-yellow-500 transition-colors active:scale-90"
+                      className="p-2 text-warm-500 hover:text-yellow-500 transition-colors active:scale-90"
                       title="React"
+                      aria-label="React to this message"
                     >
-                      <Smile className="w-3.5 h-3.5" />
+                      <Smile className="w-4 h-4" />
                     </button>
                   </div>
 
@@ -616,9 +645,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
         <div className="flex items-end gap-2 bg-warm-50 p-1.5 rounded-3xl border-2 border-warm-200 focus-within:ring-4 focus-within:ring-primary/10 focus-within:border-primary transition-all shadow-sm">
           <button
             onClick={() => { setShowEmoji(!showEmoji); setTappedMessageId(null); }}
-            aria-label="Emoji"
-            className={`p-2.5 rounded-full transition-colors shrink-0 ${
-              showEmoji ? 'text-primary bg-primary/10' : 'text-warm-400 hover:text-primary hover:bg-white'
+            aria-label={showEmoji ? 'Close emoji picker' : 'Open emoji picker'}
+            aria-expanded={showEmoji}
+            className={`p-2.5 min-w-[44px] min-h-[44px] rounded-full transition-colors shrink-0 flex items-center justify-center ${
+              showEmoji ? 'text-primary bg-primary/10' : 'text-warm-500 hover:text-primary hover:bg-white'
             }`}
           >
             <Smile className="w-5 h-5" />

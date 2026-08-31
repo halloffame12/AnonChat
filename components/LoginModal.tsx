@@ -88,10 +88,11 @@ export const LoginModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={rerollPeep}
-                  className="absolute -bottom-1 -right-1 w-7 h-7 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/40 transition-all border border-white/30"
+                  className="absolute -bottom-1 -right-1 w-9 h-9 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/40 transition-all border border-white/30"
                   title="Reroll avatar"
+                  aria-label="Reroll avatar"
                 >
-                  <Dice5 className="w-3.5 h-3.5 text-white" />
+                  <Dice5 className="w-4 h-4 text-white" />
                 </button>
               </div>
             </div>
@@ -122,10 +123,11 @@ export const LoginModal: React.FC = () => {
               <>
                 {/* Username */}
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-warm-600 uppercase tracking-wider ml-1">Username</label>
+                  <label htmlFor="username" className="block text-xs font-bold text-warm-600 uppercase tracking-wider ml-1">Username</label>
                   <div className="relative group">
                     <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400 group-focus-within:text-primary transition-colors" />
                     <input
+                      id="username"
                       type="text"
                       className="input-warm pl-10"
                       placeholder="Choose a cool name..."
@@ -139,8 +141,9 @@ export const LoginModal: React.FC = () => {
                 {/* Age + Gender row */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-warm-600 uppercase tracking-wider ml-1">Age</label>
+                    <label htmlFor="age" className="block text-xs font-bold text-warm-600 uppercase tracking-wider ml-1">Age</label>
                     <input
+                      id="age"
                       type="number"
                       min="13"
                       className="input-warm"
@@ -150,9 +153,10 @@ export const LoginModal: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-warm-600 uppercase tracking-wider ml-1">Gender</label>
+                    <label htmlFor="gender" className="block text-xs font-bold text-warm-600 uppercase tracking-wider ml-1">Gender</label>
                     <div className="relative">
                       <select
+                        id="gender"
                         aria-label="Gender"
                         className="input-warm appearance-none cursor-pointer"
                         value={formData.gender}
@@ -171,10 +175,11 @@ export const LoginModal: React.FC = () => {
 
                 {/* Location */}
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-warm-600 uppercase tracking-wider ml-1">Location <span className="text-warm-400 font-normal normal-case">(optional)</span></label>
+                  <label htmlFor="location" className="block text-xs font-bold text-warm-600 uppercase tracking-wider ml-1">Location <span className="text-warm-400 font-normal normal-case">(optional)</span></label>
                   <div className="relative group">
                     <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400 group-focus-within:text-primary transition-colors" />
                     <input
+                      id="location"
                       type="text"
                       className="input-warm pl-10"
                       placeholder="City, Country"
@@ -200,11 +205,11 @@ export const LoginModal: React.FC = () => {
             {step === 'interests' && (
               <>
                 {/* Interests */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-warm-600 uppercase tracking-wider ml-1 flex items-center gap-1">
+                <fieldset className="space-y-1.5 border-0 p-0 m-0">
+                  <legend className="block text-xs font-bold text-warm-600 uppercase tracking-wider pb-2 flex items-center gap-1">
                     <Hash className="w-3 h-3" /> Pick your interests
-                  </label>
-                  <p className="text-xs text-warm-400 ml-1 mb-2">Select 3–5 to find better matches</p>
+                  </legend>
+                  <p className="text-xs text-warm-500 mb-2">Select 3–5 to find better matches</p>
                   <div className="flex flex-wrap gap-2">
                     {INTEREST_OPTIONS.map(interest => {
                       const selected = formData.interests.includes(interest);
@@ -224,7 +229,7 @@ export const LoginModal: React.FC = () => {
                       );
                     })}
                   </div>
-                </div>
+                </fieldset>
 
                 {/* Submit */}
                 <button
@@ -260,7 +265,7 @@ export const LoginModal: React.FC = () => {
             )}
 
             {/* Trust footer */}
-            <div className="flex items-center justify-center gap-2 text-xs text-warm-400 pt-2 border-t border-warm-100">
+            <div className="flex items-center justify-center gap-2 text-xs text-warm-500 pt-2 border-t border-warm-100">
               <Shield className="w-3 h-3" />
               <span>End-to-end encrypted • No data stored</span>
             </div>
