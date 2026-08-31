@@ -53,26 +53,39 @@ if (isProduction && ALLOWED_ORIGINS.some(origin => origin.includes('localhost'))
   console.warn('[SECURITY WARNING] Localhost origins detected in production CORS configuration.');
 }
 
+// Shared CORS origin validator.
+// Returns a clean 403 (not a thrown 500) for blocked origins, so clients
+// see an actionable error instead of a confusing "Internal Server Error".
+const corsOrigin = (origin, callback) => {
+  if (!origin) return callback(null, true);
+  if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+  console.warn(`[CORS] Blocked origin: ${origin}`);
+  const err = new Error('Not allowed by CORS');
+  err.status = 403;
+  err.code = 'CORS_NOT_ALLOWED';
+  callback(err);
+};
+
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-    console.warn(`[CORS] Blocked origin: ${origin}`);
-    callback(new Error('Not allowed by CORS'));
-  },
+  origin: corsOrigin,
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Centralized error handler — returns JSON with the status set by the
+// throwing code (e.g. CORS 403) instead of Express' default 500 HTML.
+app.use((err, req, res, next) => {
+  const status = err.status || err.statusCode || 500;
+  const code = err.code || 'INTERNAL_ERROR';
+  const message = status === 500 ? 'Internal server error' : (err.message || 'Error');
+  if (status >= 500) log.error('Unhandled error', { message: err.message, stack: err.stack });
+  res.status(status).json({ error: message, code });
+});
+
 const io = new Server(server, {
   cors: {
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-      console.warn(`[Socket.IO CORS] Blocked origin: ${origin}`);
-      callback(new Error('Not allowed by Socket.IO CORS'));
-    },
+    origin: corsOrigin,
     credentials: true
   },
   pingTimeout: 60000,
