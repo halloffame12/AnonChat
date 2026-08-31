@@ -94,11 +94,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
         </div>
 
         {/* Hero Peeps cluster — the main illustration */}
-        <div className={`flex justify-center gap-2 mb-8 transition-all duration-1000 ease-out ${avatarLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <AvatarPeep seed={HERO_PEERS[0]} size={64} className="ring-4 ring-white shadow-soft -rotate-6 hover:rotate-0 transition-transform duration-300" />
-          <AvatarPeep seed={HERO_PEERS[1]} size={80} className="ring-4 ring-white shadow-soft translate-y-2 hover:translate-y-0 transition-transform duration-300" />
-          <AvatarPeep seed={HERO_PEERS[2]} size={72} className="ring-4 ring-white shadow-soft -translate-y-1 hover:translate-y-0 transition-transform duration-300" />
-          <AvatarPeep seed={HERO_PEERS[3]} size={68} className="ring-4 ring-white shadow-soft rotate-3 hover:rotate-0 transition-transform duration-300" />
+        <div className={`flex justify-center gap-2 sm:gap-3 mb-8 transition-all duration-1000 ease-out ${avatarLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <AvatarPeep seed={HERO_PEERS[0]} size={96} className="!w-11 !h-11 sm:!w-14 sm:!h-14 md:!w-16 md:!h-16 ring-4 ring-white shadow-soft -rotate-6 hover:rotate-0 transition-transform duration-300" />
+          <AvatarPeep seed={HERO_PEERS[1]} size={96} className="!w-[52px] !h-[52px] sm:!w-16 sm:!h-16 md:!w-20 md:!h-20 ring-4 ring-white shadow-soft translate-y-2 hover:translate-y-0 transition-transform duration-300" />
+          <AvatarPeep seed={HERO_PEERS[2]} size={96} className="!w-12 !h-12 sm:!w-[60px] sm:!h-[60px] md:!w-[72px] md:!h-[72px] ring-4 ring-white shadow-soft -translate-y-1 hover:translate-y-0 transition-transform duration-300" />
+          <AvatarPeep seed={HERO_PEERS[3]} size={96} className="!w-11 !h-11 sm:!w-14 sm:!h-14 md:!w-[68px] md:!h-[68px] ring-4 ring-white shadow-soft rotate-3 hover:rotate-0 transition-transform duration-300" />
         </div>
 
         <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] mb-6 tracking-tight text-balance animate-fade-in-up [animation-delay:0.1s]">
@@ -375,7 +375,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             </div>
           </div>
           <div className="text-center text-xs text-warm-500">
-            &copy; 2024 AnonChat Live. Connecting the world anonymously.
+            &copy; {new Date().getFullYear()} AnonChat Live. Connecting the world anonymously.
           </div>
         </div>
       </footer>
