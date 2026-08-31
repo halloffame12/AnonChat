@@ -375,7 +375,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
             ) : (
               <AvatarPeep seed={session.id} size={40} className="ring-2 ring-white shadow-sm" />
             )}
-            <div className="badge-online absolute -bottom-0.5 -right-0.5" />
+            {session.type !== ChatType.Group && <div className="badge-online absolute -bottom-0.5 -right-0.5" />}
           </div>
           <div className="min-w-0">
             <h2 className="font-bold text-dark text-sm md:text-base leading-tight truncate">{session.name}</h2>
@@ -523,7 +523,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
 
                   {/* Reply-to quote */}
                   {msg.replyTo && (
-                    <div className={`text-[11px] px-3.5 py-1.5 rounded-t-lg border-b ${isMe ? 'bg-primary-dark text-white/80 border-primary/30' : 'bg-warm-100 text-warm-500 border-warm-200'} max-w-[90%]`}>
+                    <div className={`text-[11px] px-3.5 py-1.5 rounded-t-md border-b ${isMe ? 'bg-primary-dark text-white/80 border-primary/30' : 'bg-warm-100 text-warm-500 border-warm-200'}`}>
                       <span className="font-bold">↪ {msg.replyTo.senderName}</span>
                       <p className="truncate opacity-75">{msg.replyTo.content}</p>
                     </div>
@@ -532,8 +532,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
                   <div
                     className={`px-4 py-2.5 shadow-sm relative transition-all ${
                       isMe
-                        ? 'bg-primary text-white rounded-2xl rounded-br-md'
-                        : 'bg-white text-dark border border-warm-100 rounded-2xl rounded-bl-md shadow-sm'
+                        ? `bg-primary text-white rounded-2xl rounded-br-md ${msg.replyTo ? 'rounded-tl-none' : ''}`
+                        : `bg-white text-dark border border-warm-100 rounded-2xl rounded-bl-md ${msg.replyTo ? 'rounded-tl-none' : ''} shadow-sm`
                     } ${isSequence ? 'mt-0.5' : ''} ${msg.status === 'failed' ? 'border-accent border-2' : ''}`}
                   >
                     <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
@@ -552,13 +552,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
                             }`}
                           >
                             <span>{r.emoji}</span>
-                            <span className={`font-semibold ${isMe ? 'text-white/70' : 'text-warm-400'}`}>{r.count}</span>
+                            <span className={`font-semibold ${isMe ? 'text-white/70' : 'text-warm-600'}`}>{r.count}</span>
                           </button>
                         ))}
                       </div>
                     )}
 
-                    <div className={`text-[10px] mt-1 flex justify-end gap-1 items-center ${isMe ? 'text-white/60' : 'text-warm-400'}`}>
+                    <div className={`text-[11px] mt-1 flex justify-end gap-1.5 items-center ${isMe ? 'text-white/70' : 'text-warm-500'}`}>
                       <span>{formatMessageTime(msg.timestamp)}</span>
                       {isMe && <StatusIcon status={msg.status} />}
                     </div>
@@ -627,7 +627,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
           </div>
           <button
             onClick={() => setReplyTo(null)}
-            className="p-1 hover:bg-warm-200 rounded-full text-warm-400 transition-colors"
+            aria-label="Cancel reply"
+            className="p-2 rounded-full text-warm-500 hover:bg-warm-200 hover:text-warm-700 transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
