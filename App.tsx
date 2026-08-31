@@ -269,16 +269,16 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
-      {/* Mobile sidebar toggle — always available so Rooms/People/Random are reachable from any screen */}
-      <button
-        onClick={() => setSidebarOpen(true)}
-        className={`fixed left-4 safe-area-bottom z-30 md:hidden w-14 h-14 bg-white rounded-2xl shadow-pop border border-warm-200 flex items-center justify-center text-primary hover:bg-warm-50 active:scale-95 transition-all ${
-          activeSessionId ? 'bottom-[92px]' : 'bottom-5'
-        }`}
-        aria-label="Open menu"
-      >
-        <Menu className="w-6 h-6" />
-      </button>
+      {/* Mobile sidebar toggle — shown on screens with no chat input (home/welcome) */}
+      {!activeSessionId && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="fixed bottom-5 left-4 safe-area-bottom z-30 md:hidden w-14 h-14 bg-white rounded-2xl shadow-pop border border-warm-200 flex items-center justify-center text-primary hover:bg-warm-50 active:scale-95 transition-all"
+          aria-label="Open menu"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+      )}
 
       {/* Mobile sidebar drawer */}
       {sidebarOpen && (
@@ -323,6 +323,7 @@ const AppContent: React.FC = () => {
             currentUser={user!}
             onBack={() => setActiveSessionId(undefined)}
             onLeave={() => handleLeaveSession(activeSession.id)}
+            onOpenMenu={() => setSidebarOpen(true)}
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center px-6 bg-gradient-to-b from-warm-50 to-white">

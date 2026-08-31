@@ -3,7 +3,7 @@ import { Message, ChatSession, ChatType, User, ReplyTo, MessageReaction } from '
 import { socketService } from '../services/socket';
 import {
   Send, MoreVertical, Smile, ChevronLeft, Trash2, Flag, Ban,
-  Check, CheckCheck, Loader2, AlertCircle, Reply, X, SkipForward
+  Check, CheckCheck, Loader2, AlertCircle, Reply, X, SkipForward, Menu
 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 
@@ -23,9 +23,10 @@ interface ChatWindowProps {
   currentUser: User;
   onBack?: () => void;
   onLeave?: () => void;
+  onOpenMenu?: () => void;
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, onBack, onLeave }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, onBack, onLeave, onOpenMenu }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -358,6 +359,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
       {/* Header */}
       <div className="h-16 md:h-20 border-b border-warm-100 flex items-center justify-between px-4 md:px-6 bg-white/90 backdrop-blur-md z-20 sticky top-0 shadow-sm">
         <div className="flex items-center gap-3 min-w-0">
+          {onOpenMenu && (
+            <button
+              onClick={onOpenMenu}
+              aria-label="Open menu"
+              className="md:hidden icon-btn w-10 h-10 -ml-1 -mr-1"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+          )}
           {onBack && (
             <button
               onClick={onBack}
