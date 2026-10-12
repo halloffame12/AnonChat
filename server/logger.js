@@ -9,7 +9,7 @@ try { pino = require('pino'); } catch (e) { /* pino not installed */ }
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-function createLogger(name = 'anonchat') {
+function createLogger(name = 'hushchat') {
   if (pino && isProduction) {
     return pino({
       name,

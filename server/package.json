@@ -1,7 +1,7 @@
-{
-  "name": "anonchat-server",
+﻿{
+  "name": "hushchat-server",
   "version": "1.0.0",
-  "description": "Backend for AnonChat Live",
+  "description": "Backend for HushChat",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

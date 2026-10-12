@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "AnonChat Live — Anonymous Chat",
-  "short_name": "AnonChat",
+  "name": "HushChat — Anonymous Chat",
+  "short_name": "HushChat",
   "description": "The next generation of anonymous chat. Secure, fast, and beautifully designed for meaningful conversations without boundaries.",
   "start_url": "/",
   "scope": "/",

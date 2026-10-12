@@ -1,18 +1,18 @@
-<div align="center">
-  <img src="public/peeps-hero.png" alt="AnonChat Peeps" width="320" style="max-width:100%;">
-  <h1 align="center" style="font-size: 3rem; font-weight: 900; letter-spacing: -0.03em; margin: 0.5rem 0; background: linear-gradient(135deg, #7c5cbf, #e07a5f); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">AnonChat Live</h1>
+﻿<div align="center">
+  <img src="public/peeps-hero.png" alt="HushChat Peeps" width="320" style="max-width:100%;">
+  <h1 align="center" style="font-size: 3rem; font-weight: 900; letter-spacing: -0.03em; margin: 0.5rem 0; background: linear-gradient(135deg, #7c5cbf, #e07a5f); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">HushChat</h1>
   <p align="center" style="font-size: 1.25rem; color: #6b5b5b; font-weight: 500;">
     Talk to Strangers, Make Real Connections.
   </p>
   <p align="center">
-    <a href="https://github.com/halloffame12/AnonChat/stargazers">
-      <img src="https://img.shields.io/github/stars/halloffame12/AnonChat?style=for-the-badge&logo=github&color=7c5cbf" alt="GitHub Stars">
+    <a href="https://github.com/halloffame12/HushChat/stargazers">
+      <img src="https://img.shields.io/github/stars/halloffame12/HushChat?style=for-the-badge&logo=github&color=7c5cbf" alt="GitHub Stars">
     </a>
-    <a href="https://github.com/halloffame12/AnonChat/network">
-      <img src="https://img.shields.io/github/forks/halloffame12/AnonChat?style=for-the-badge&logo=github&color=e07a5f" alt="GitHub Forks">
+    <a href="https://github.com/halloffame12/HushChat/network">
+      <img src="https://img.shields.io/github/forks/halloffame12/HushChat?style=for-the-badge&logo=github&color=e07a5f" alt="GitHub Forks">
     </a>
-    <a href="https://github.com/halloffame12/AnonChat/issues">
-      <img src="https://img.shields.io/github/issues/halloffame12/AnonChat?style=for-the-badge&logo=github&color=81b29a" alt="GitHub Issues">
+    <a href="https://github.com/halloffame12/HushChat/issues">
+      <img src="https://img.shields.io/github/issues/halloffame12/HushChat?style=for-the-badge&logo=github&color=81b29a" alt="GitHub Issues">
     </a>
     <a href="./LICENSE">
       <img src="https://img.shields.io/badge/license-MIT-2d2323?style=for-the-badge" alt="MIT License">
@@ -22,7 +22,7 @@
 
 ---
 
-**AnonChat Live** is a beautifully designed, real-time anonymous chat application where you can instantly connect with strangers from around the world. No sign-up, no personal data — just pick a name and start chatting.
+**HushChat** is a beautifully designed, real-time anonymous chat application where you can instantly connect with strangers from around the world. No sign-up, no personal data — just pick a name and start chatting.
 
 Built with a warm, hand-drawn aesthetic using [Open Peeps](https://www.openpeeps.com/) illustrations, featuring private messaging, smart matchmaking, and public chat rooms.
 
@@ -103,7 +103,7 @@ Open `http://localhost:3000` in your browser.
 ## 📁 Structure
 
 ```
-anonchat-live/
+hushchat/
 ├── App.tsx                 # Main app (routing, socket lifecycle)
 ├── components/
 │   ├── LandingPage.tsx     # Landing page with live stats
@@ -151,8 +151,8 @@ MIT — feel free to use, modify, and distribute.
   <sub>Built with ❤️ and lots of ☕ · Avatars by <a href="https://www.openpeeps.com/">Open Peeps</a> (CC0) by Pablo Stanley</sub>
   <br>
   <sub>
-    <a href="https://github.com/halloffame12/AnonChat">GitHub</a> ·
-    <a href="https://github.com/halloffame12/AnonChat/issues">Issues</a> ·
-    <a href="https://github.com/halloffame12/AnonChat/discussions">Discussions</a>
+    <a href="https://github.com/halloffame12/HushChat">GitHub</a> ·
+    <a href="https://github.com/halloffame12/HushChat/issues">Issues</a> ·
+    <a href="https://github.com/halloffame12/HushChat/discussions">Discussions</a>
   </sub>
 </div>

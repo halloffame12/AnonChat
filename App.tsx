@@ -67,6 +67,11 @@ const AppContent: React.FC = () => {
       setSessions(prev => [newSession, ...prev]);
       setActiveSessionId(newSession.id);
       setIncomingRequest(null);
+      if (window.history.state?.view === 'chat') {
+        window.history.replaceState({ view: 'chat', sessionId: newSession.id }, '');
+      } else {
+        window.history.pushState({ view: 'chat', sessionId: newSession.id }, '');
+      }
       showToast(`Chat started with ${data.partnerName}`, 'success');
     };
 
@@ -76,6 +81,11 @@ const AppContent: React.FC = () => {
       setIsSearching(false);
       setMatchedPeepAnim(true);
       setTimeout(() => setMatchedPeepAnim(false), 1200);
+      if (window.history.state?.view === 'chat' || window.history.state?.view === 'searching') {
+        window.history.replaceState({ view: 'chat', sessionId: session.id }, '');
+      } else {
+        window.history.pushState({ view: 'chat', sessionId: session.id }, '');
+      }
       showToast('Found a random match!', 'success');
     };
 
@@ -173,6 +183,16 @@ const AppContent: React.FC = () => {
     };
   }, [isAuthenticated, activeSessionId, user]);
 
+  // Cancel random search with history support
+  const cancelRandomSearch = () => {
+    if (window.history.state?.view === 'searching') {
+      window.history.back();
+    } else {
+      setIsSearching(false);
+      socketService.send('random:cancel', {});
+    }
+  };
+
   // Close overlays with Escape + lock body scroll while a modal/search is open
   const overlayOpen = !!incomingRequest || isSearching;
   useEffect(() => {
@@ -186,8 +206,7 @@ const AppContent: React.FC = () => {
         if (incomingRequest) {
           respondToRequest(false);
         } else if (isSearching) {
-          setIsSearching(false);
-          socketService.send('random:cancel', {});
+          cancelRandomSearch();
         }
       }
     };
@@ -198,6 +217,74 @@ const AppContent: React.FC = () => {
     };
   }, [overlayOpen, incomingRequest, isSearching]);
 
+  // Browser History & Back button synchronization
+  useEffect(() => {
+    if (!window.history.state) {
+      window.history.replaceState({ view: showLanding ? 'landing' : 'lobby' }, '');
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state;
+
+      // Cancel random search if active
+      setIsSearching(prev => {
+        if (prev) socketService.send('random:cancel', {});
+        return false;
+      });
+
+      // Dismiss incoming request modal
+      setIncomingRequest(null);
+
+      if (!state || state.view === 'landing') {
+        setShowLanding(true);
+        setActiveSessionId(undefined);
+        setSidebarOpen(false);
+        return;
+      }
+
+      if (state.view === 'lobby') {
+        setShowLanding(false);
+        setActiveSessionId(undefined);
+        if (window.innerWidth < 768) {
+          setSidebarOpen(true);
+        } else {
+          setSidebarOpen(false);
+        }
+        return;
+      }
+
+      if (state.view === 'sidebar') {
+        setShowLanding(false);
+        setActiveSessionId(undefined);
+        setSidebarOpen(true);
+        return;
+      }
+
+      if (state.view === 'chat' && state.sessionId) {
+        setShowLanding(false);
+        setActiveSessionId(state.sessionId);
+        setSidebarOpen(false);
+        return;
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showLanding]);
+
+  // Warn before accidental page unload during active chat
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (activeSessionId) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [activeSessionId]);
+
   const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
     setNotification({ message: msg, type });
     setTimeout(() => setNotification(null), 3000);
@@ -205,6 +292,7 @@ const AppContent: React.FC = () => {
 
   const startRandomChat = () => {
     setIsSearching(true);
+    window.history.pushState({ view: 'searching' }, '');
     socketService.send('random:search', { userId: user?.id });
   };
 
@@ -222,7 +310,13 @@ const AppContent: React.FC = () => {
         setSessions(prev => prev.map(s => s.id === roomId ? { ...s, participantCount: room.participants } : s));
       }
       setActiveSessionId(roomId);
+      setSidebarOpen(false);
       socketService.send('room:join', { roomId });
+      if (window.history.state?.view === 'chat') {
+        window.history.replaceState({ view: 'chat', sessionId: roomId }, '');
+      } else {
+        window.history.pushState({ view: 'chat', sessionId: roomId }, '');
+      }
     }
   };
 
@@ -236,13 +330,47 @@ const AppContent: React.FC = () => {
     setActiveSessionId(id);
     setSidebarOpen(false);
     setSessions(prev => prev.map(s => s.id === id ? { ...s, unreadCount: 0 } : s));
+    if (window.history.state?.view === 'chat') {
+      window.history.replaceState({ view: 'chat', sessionId: id }, '');
+    } else {
+      window.history.pushState({ view: 'chat', sessionId: id }, '');
+    }
   };
 
   const handleLeaveSession = (id: string) => {
     socketService.send('chat:leave', { chatId: id });
     setSessions(prev => prev.filter(s => s.id !== id));
-    if (activeSessionId === id) setActiveSessionId(undefined);
+    if (activeSessionId === id) {
+      if (window.history.state?.view === 'chat') {
+        window.history.back();
+      } else {
+        setActiveSessionId(undefined);
+        if (window.innerWidth < 768) setSidebarOpen(true);
+      }
+    }
     showToast('Left conversation', 'info');
+  };
+
+  const handleBackFromChat = () => {
+    if (window.history.state?.view === 'chat') {
+      window.history.back();
+    } else {
+      setActiveSessionId(undefined);
+      if (window.innerWidth < 768) setSidebarOpen(true);
+    }
+  };
+
+  const handleOpenSidebar = () => {
+    setSidebarOpen(true);
+    window.history.pushState({ view: 'sidebar' }, '');
+  };
+
+  const handleCloseSidebar = () => {
+    if (window.history.state?.view === 'sidebar') {
+      window.history.back();
+    } else {
+      setSidebarOpen(false);
+    }
   };
 
   const handleLogout = () => {
@@ -251,12 +379,27 @@ const AppContent: React.FC = () => {
     setActiveSessionId(undefined);
     setShowLanding(true);
     setSidebarOpen(false);
+    window.history.replaceState({ view: 'landing' }, '');
+  };
+
+  const handleGetStarted = () => {
+    setShowLanding(false);
+    window.history.pushState({ view: 'lobby' }, '');
+  };
+
+  const handleBackToLanding = () => {
+    if (window.history.state?.view === 'lobby') {
+      window.history.back();
+    } else {
+      setShowLanding(true);
+      window.history.replaceState({ view: 'landing' }, '');
+    }
   };
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
 
-  if (showLanding) return <LandingPage onGetStarted={() => setShowLanding(false)} />;
-  if (!isAuthenticated) return <LoginModal />;
+  if (showLanding) return <LandingPage onGetStarted={handleGetStarted} />;
+  if (!isAuthenticated) return <LoginModal onBack={handleBackToLanding} />;
 
   return (
     <div className="flex h-screen h-screen-safe bg-warm-50 overflow-hidden relative font-sans app-shell">
@@ -272,7 +415,7 @@ const AppContent: React.FC = () => {
       {/* Mobile sidebar toggle — shown on screens with no chat input (home/welcome) */}
       {!activeSessionId && (
         <button
-          onClick={() => setSidebarOpen(true)}
+          onClick={handleOpenSidebar}
           className="fixed bottom-5 left-4 safe-area-bottom z-30 md:hidden w-14 h-14 bg-white rounded-2xl shadow-pop border border-warm-200 flex items-center justify-center text-primary hover:bg-warm-50 active:scale-95 transition-all"
           aria-label="Open menu"
         >
@@ -293,7 +436,7 @@ const AppContent: React.FC = () => {
           publicRooms={publicRooms}
           onJoinRoom={joinRoom}
           isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
+          onClose={handleCloseSidebar}
           onLogout={handleLogout}
         />
       )}
@@ -321,9 +464,9 @@ const AppContent: React.FC = () => {
             key={activeSession.id}
             session={activeSession}
             currentUser={user!}
-            onBack={() => setActiveSessionId(undefined)}
+            onBack={handleBackFromChat}
             onLeave={() => handleLeaveSession(activeSession.id)}
-            onOpenMenu={() => setSidebarOpen(true)}
+            onOpenMenu={handleOpenSidebar}
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center px-6 bg-gradient-to-b from-warm-50 to-white">
@@ -416,7 +559,7 @@ const AppContent: React.FC = () => {
             <h3 className="text-xl font-bold text-dark mb-1">Finding a match...</h3>
             <p className="text-warm-500 mb-8 text-sm">Connecting you with someone random.</p>
             <button
-              onClick={() => { setIsSearching(false); socketService.send('random:cancel', {}); }}
+              onClick={cancelRandomSearch}
               className="btn-secondary w-full"
             >
               Cancel Search

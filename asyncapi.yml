@@ -1,14 +1,14 @@
-asyncapi: 2.6.0
+﻿asyncapi: 2.6.0
 info:
-  title: AnonChat Live WebSocket API
+  title: HushChat WebSocket API
   version: 2.0.0
   description: |
     Anonymous real-time chat platform WebSocket event contract.
     Protocol versioning: All events are prefixed with semantic namespacing (e.g., `message:send`, `room:join`).
     Breaking changes will be signaled by a new major protocol version.
   contact:
-    name: AnonChat Team
-    url: https://github.com/halloffame12/AnonChat
+    name: HushChat Team
+    url: https://github.com/halloffame12/HushChat
 
 servers:
   production:

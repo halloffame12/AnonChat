@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+﻿import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { User, Gender } from '../types';
 import { socketService } from '../services/socket';
 
@@ -18,7 +18,7 @@ const SOCKET_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:30
 const API_URL = `${SOCKET_URL}/api`;
 
 // Session storage keys
-const SESSION_KEY = 'anonchat_session';
+const SESSION_KEY = 'hushchat_session';
 
 interface StoredSession {
   user: User;

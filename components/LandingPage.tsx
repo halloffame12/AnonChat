@@ -52,10 +52,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
       {/* Navbar */}
       <nav className="relative z-50 container mx-auto px-6 py-5 flex justify-between items-center sticky top-0 bg-warm-50/85 backdrop-blur-lg border-b border-warm-200/60">
         <div className="flex items-center gap-2.5 font-bold text-xl tracking-tight cursor-pointer" onClick={scrollToTop}>
-          <div className="w-9 h-9 bg-gradient-to-br from-primary to-primary-dark rounded-xl flex items-center justify-center shadow-soft">
-            <MessageCircle className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 rounded-xl shadow-warm overflow-hidden flex-shrink-0">
+            <img src="/icon-source.svg" alt="HushChat Logo" className="w-8 h-8" />
           </div>
-          <span className="hidden sm:inline text-dark">AnonChat<span className="text-primary">Live</span></span>
+          <span className="hidden sm:inline text-dark">HushChat<span className="text-primary">Live</span></span>
         </div>
         <div className="hidden md:flex items-center gap-7 text-warm-600 text-sm font-semibold">
           <button onClick={() => scrollToSection('how-it-works')} className="hover:text-primary transition-colors">How it Works</button>
@@ -64,18 +64,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           <button onClick={() => scrollToSection('safety')} className="hover:text-primary transition-colors">Safety</button>
         </div>
         <div className="flex items-center gap-3">
-          <a
-            href="https://github.com/halloffame12/AnonChat"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-warm-600 bg-white border border-warm-200 rounded-xl hover:border-primary/30 hover:text-primary hover:shadow-soft transition-all"
-          >
-            <Github className="w-4 h-4" />
-            Star
-            <div className="flex items-center gap-0.5 ml-0.5 text-amber-500">
-              <svg className="w-3 h-3 fill-current" viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
-            </div>
-          </a>
           <button
             onClick={onGetStarted}
             className="px-5 py-2.5 bg-primary text-white rounded-2xl font-bold text-sm shadow-warm hover:shadow-xl hover:scale-[1.03] active:scale-[0.97] transition-all"
@@ -357,25 +345,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
       {/* Footer */}
       <footer className="border-t border-warm-200 bg-warm-50 py-10 relative z-10">
         <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+          <div className="flex flex-col items-center gap-4">
             <div className="flex items-center gap-2 font-bold text-lg">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary-dark rounded-lg flex items-center justify-center">
-                <MessageCircle className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 rounded-lg overflow-hidden shadow-warm flex-shrink-0">
+                <img src="/icon-source.svg" alt="HushChat Logo" className="w-8 h-8" />
               </div>
-              <span className="text-dark">AnonChat<span className="text-primary">Live</span></span>
+              <span className="text-dark">HushChat<span className="text-primary">Live</span></span>
             </div>
-            <div className="flex items-center gap-6 text-sm text-warm-500">
-              <a href="https://github.com/halloffame12/AnonChat" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors font-medium inline-flex items-center gap-1.5">
-                <Github className="w-4 h-4" /> GitHub
-              </a>
-              <a href="https://github.com/halloffame12/AnonChat/stargazers" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors font-medium inline-flex items-center gap-1">
-                <svg className="w-3.5 h-3.5 fill-amber-500" viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
-                Star
-              </a>
+            <div className="text-center text-xs text-warm-500">
+              &copy; {new Date().getFullYear()} HushChat. Connecting the world anonymously.
             </div>
-          </div>
-          <div className="text-center text-xs text-warm-500">
-            &copy; {new Date().getFullYear()} AnonChat Live. Connecting the world anonymously.
           </div>
         </div>
       </footer>
@@ -383,6 +362,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
   );
 };
 
+  
 const FeatureCard: React.FC<{
   icon: React.ReactNode;
   title: string;

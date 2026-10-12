@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Block internal/API routes from indexing
+Disallow: /api/
+Disallow: /socket.io/
+Disallow: /metrics
+
+# Sitemaps
+Sitemap: https://hush.versz.app/sitemap.xml
+
+# Crawl delay for polite bots
+Crawl-delay: 10

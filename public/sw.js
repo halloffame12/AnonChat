@@ -1,5 +1,5 @@
-/* AnonChat Live Service Worker — PWA installability + offline shell caching */
-const CACHE = 'anonchat-v1';
+﻿/* HushChat Service Worker — PWA installability + offline shell caching */
+const CACHE = 'hushchat-v1';
 const CORE_ASSETS = [
   '/',
   '/index.html',

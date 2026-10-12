@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Gender } from '../types';
 import AvatarPeep from './AvatarPeep';
-import { User, MapPin, Hash, Dice5, Sparkles, Shield } from 'lucide-react';
+import { User, MapPin, Hash, Dice5, Sparkles, Shield, ChevronLeft } from 'lucide-react';
 
 const INTEREST_OPTIONS = [
   'Gaming', 'Music', 'Movies', 'Anime', 'Sports',
@@ -12,7 +12,11 @@ const INTEREST_OPTIONS = [
 
 const WARM_GRADIENT = 'from-primary via-primary-light to-primary-dark';
 
-export const LoginModal: React.FC = () => {
+interface LoginModalProps {
+  onBack?: () => void;
+}
+
+export const LoginModal: React.FC<LoginModalProps> = ({ onBack }) => {
   const { login, isConnecting, connectionError } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
@@ -81,6 +85,18 @@ export const LoginModal: React.FC = () => {
             <div className="gradient-blob w-64 h-64 bg-white/10 -top-20 -right-20" />
             <div className="gradient-blob w-48 h-48 bg-white/5 -bottom-10 -left-10" />
 
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label="Back to home"
+                className="absolute top-4 left-4 z-20 text-white/80 hover:text-white p-2 rounded-xl hover:bg-white/10 transition-colors flex items-center gap-1 text-sm font-semibold"
+              >
+                <ChevronLeft className="w-5 h-5" />
+                <span className="hidden sm:inline">Home</span>
+              </button>
+            )}
+
             {/* Peep avatar */}
             <div className="relative z-10 mb-3">
               <div className="inline-block relative">
@@ -98,7 +114,7 @@ export const LoginModal: React.FC = () => {
             </div>
 
             <h1 className="text-2xl md:text-3xl font-extrabold text-white relative z-10 tracking-tight">
-              {step === 'info' ? 'AnonChat Live' : 'Your Interests'}
+              {step === 'info' ? 'HushChat' : 'Your Interests'}
             </h1>
             <p className="text-white/70 mt-1 text-sm font-medium relative z-10">
               {step === 'info' ? 'Your secret identity awaits' : 'Help us find your tribe'}
