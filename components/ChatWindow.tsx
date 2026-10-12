@@ -42,6 +42,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
   const typingTimeoutRef = useRef<any>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const ackTimeoutRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -255,6 +256,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
     setInputText('');
     setShowEmoji(false);
     setReplyTo(null);
+
+    // Keep mobile keyboard open by retaining focus
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
 
     socketService.send('message:send', {
       chatId: session.id,
@@ -691,6 +697,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
             <Smile className="w-5 h-5" />
           </button>
           <textarea
+            ref={textareaRef}
             className="flex-1 bg-transparent border-none resize-none focus:ring-0 text-base text-dark max-h-28 min-h-[42px] py-2.5 px-1 placeholder:text-warm-400 touch-manipulation"
             placeholder="Type a message..."
             rows={1}
@@ -702,10 +709,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
             style={{ fontSize: '16px' }}
           />
           <button
-            onClick={handleSend}
-            disabled={!inputText.trim()}
+            type="button"
+            onPointerDown={(e) => {
+              // Prevent button from stealing focus away from textarea
+              e.preventDefault();
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (!inputText.trim()) return;
+              handleSend();
+            }}
             aria-label="Send"
-            className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center bg-primary text-white rounded-full hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95 shadow-warm touch-manipulation shrink-0"
+            className={`p-3 min-w-[44px] min-h-[44px] flex items-center justify-center bg-primary text-white rounded-full hover:bg-primary-dark transition-all hover:scale-105 active:scale-95 shadow-warm touch-manipulation shrink-0 ${
+              !inputText.trim() ? 'opacity-40 cursor-not-allowed' : ''
+            }`}
           >
             <Send className="w-4 h-4 ml-0.5" />
           </button>
