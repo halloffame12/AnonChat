@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { MessageCircle, Zap, Shield, Globe, Heart, Lock, ArrowRight, Users, Sparkles, Smile, Github } from 'lucide-react';
+import { Zap, Shield, Globe, Heart, Lock, ArrowRight, Users, Sparkles, Smile } from 'lucide-react';
 import AvatarPeep, { AvatarPeepCluster } from './AvatarPeep';
 
 interface LandingPageProps {
