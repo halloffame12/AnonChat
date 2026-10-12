@@ -23,6 +23,26 @@ const AppContent: React.FC = () => {
   const [reconnectCount, setReconnectCount] = useState(0);
   const [matchedPeepAnim, setMatchedPeepAnim] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const handleResize = () => {
+      setViewportHeight(vv.height);
+      if (window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
+    };
+
+    vv.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => {
+      vv.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated || !user) return;
@@ -402,7 +422,10 @@ const AppContent: React.FC = () => {
   if (!isAuthenticated) return <LoginModal onBack={handleBackToLanding} />;
 
   return (
-    <div className="flex h-screen h-screen-safe bg-warm-50 overflow-hidden relative font-sans app-shell">
+    <div
+      style={viewportHeight ? { height: `${viewportHeight}px` } : undefined}
+      className="flex h-screen h-screen-safe bg-warm-50 overflow-hidden relative font-sans app-shell"
+    >
       {/* Reconnection banner */}
       {isReconnecting && (
         <div className="absolute top-0 left-0 right-0 z-50 bg-amber-500 text-white px-4 py-2.5 flex items-center justify-center gap-2 animate-fade-in-down shadow-lg">

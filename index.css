@@ -166,12 +166,18 @@ input, textarea, select {
 }
 
 /* Fix mobile keyboard pushing content */
+.h-screen-safe {
+  height: 100vh;
+  height: 100dvh;
+}
+
 @supports (-webkit-touch-callout: none) {
   body {
     min-height: -webkit-fill-available;
   }
   .h-screen-safe {
     height: -webkit-fill-available;
+    height: 100dvh;
   }
 }
 

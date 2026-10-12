@@ -49,6 +49,32 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
     }, 100);
   }, []);
 
+  const handleInputFocus = useCallback(() => {
+    scrollToBottom();
+    setTimeout(() => {
+      scrollToBottom();
+      if (window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
+    }, 300);
+  }, [scrollToBottom]);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const handleViewportChange = () => {
+      if (document.activeElement?.tagName === 'TEXTAREA' || document.activeElement?.tagName === 'INPUT') {
+        scrollToBottom();
+      }
+    };
+
+    vv.addEventListener('resize', handleViewportChange);
+    return () => {
+      vv.removeEventListener('resize', handleViewportChange);
+    };
+  }, [scrollToBottom]);
+
   const initializedRef = useRef(false);
 
   useEffect(() => {
@@ -671,6 +697,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ session, currentUser, on
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={handleInputFocus}
             aria-label="Message"
             style={{ fontSize: '16px' }}
           />
